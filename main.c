@@ -1,9 +1,15 @@
+#include <stdlib.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
 
-#define MEMORY_SIZE (256*256) // 64k memory
+#include "common.h"
+#include "file.h"
+#include "logging.h"
+#include "memory.h"
 
+// TODO consider moving the actual instructions into their own 'cpu.h'
 /*
 Zero (0x80):        Set if the last operation produced a result of 0;
 Operation (0x40):   Set if the last operation was a subtraction;
@@ -35,9 +41,6 @@ Carry (0x10):       Set if the last operation produced a result over 255 (for ad
 #define EMPTY_2                     (0xfea0) // ?
 #define INTERNEL_RAM2               (0xff80) // ?
 #define INTERRUPT_ENABLE_REGISTER   (0xffff) // ? 
-
-typedef unsigned char u8;
-typedef unsigned short u16;
 
 typedef struct {
     union {
@@ -77,8 +80,19 @@ typedef struct {
     u16 PC;
 } Registers;
 
+typedef struct {
+    int m;
+    int t;
+} Clock;
+
+Clock tick_clock = {0,0};
+Clock total_clock = {0,0};
 Registers registers;
-u8 memory[MEMORY_SIZE];
+
+void set_ticks(int t){
+    tick_clock.t = t;
+    tick_clock.m = t/4;
+}
 
 void print_registers() {
     printf(" --- Registers ---\n");
@@ -98,6 +112,7 @@ void print_registers() {
 void increment_r16(u16* operand){
     // no flags
     (*operand)++;
+    set_ticks(8);
 }
 
 void increment_r8(u8* operand){
@@ -112,11 +127,13 @@ void increment_r8(u8* operand){
     }
 
     (*operand)++;
+    set_ticks(4);
 }
 
 void decrement_r16(u16* operand){
     // no flags
     (*operand)--;
+    set_ticks(8);
 }
 
 void decrement_r8(u8* operand){
@@ -129,33 +146,37 @@ void decrement_r8(u8* operand){
     }
 
     (*operand)--;
+    set_ticks(4);
 }
 
 void add_r16(u16* lhs, u16* rhs)
 {
     (*lhs) += (*rhs);
+    set_ticks(8);
 }
 
 void add_a_r8(u8* rhs){
     registers.F = 0;
     // TODO flags
     registers.A += *rhs;
+    set_ticks(4);
 } 
 
 void adc_a_r8(u8* rhs){
     registers.F = 0;
     // TODO flags
-    assert(0);
+    set_ticks(4);
 } 
 
 void sub_a_r8(u8* rhs){
     registers.F = 0;
     registers.A -= *rhs;
+    set_ticks(4);
 }
 
 void subc_a_r8(u8* rhs){
     registers.F = 0;
-    assert(0);
+    set_ticks(4);
 }
 
 void xor_a_r8(u8* rhs){
@@ -163,6 +184,7 @@ void xor_a_r8(u8* rhs){
     registers.A ^= *rhs;
 
     if(registers.A == 0x00) registers.F |= FLAGS_ZERO;
+    set_ticks(4);
 }
 
 void or_a_r8(u8* rhs){
@@ -170,6 +192,7 @@ void or_a_r8(u8* rhs){
     registers.A |= *rhs;
 
     if(registers.A == 0x00) registers.F |= FLAGS_ZERO;
+    set_ticks(4);
 }
 
 void and_a_r8(u8* rhs){
@@ -179,14 +202,11 @@ void and_a_r8(u8* rhs){
     registers.A &= *rhs;
 
     if(registers.A == 0x00) registers.F |= FLAGS_ZERO;
-}
-
-void load_r8(u8* lhs, u8* rhs){
-    *lhs = *rhs;
+    set_ticks(4);
 }
 
 void nop(){
-    // TODO clock cycles
+    set_ticks(4);
 }
 
 void rotate_right(u8* operand){
@@ -245,6 +265,54 @@ void rotate_left_carry(u8* operand){
     registers.F |= (carry >> 3);
 }
 
+void rotate_right_a(u8* operand)
+{
+    rotate_right(operand);
+    set_ticks(4);
+}
+
+void rotate_left_a(u8* operand)
+{
+    rotate_left(operand);
+    set_ticks(4);
+}
+
+void rotate_right_carry_a(u8* operand)
+{
+    rotate_right_carry(operand);
+    set_ticks(4);
+}
+
+void rotate_left_carry_a(u8* operand)
+{
+    rotate_left_carry(operand);
+    set_ticks(4);
+}
+
+void rotate_right_cb(u8* operand)
+{
+    rotate_right(operand);
+    set_ticks(8);
+}
+
+void rotate_left_cb(u8* operand)
+{
+    rotate_left(operand);
+    set_ticks(8);
+}
+
+void rotate_right_carry_cb(u8* operand)
+{
+    rotate_right_carry(operand);
+    set_ticks(8);
+}
+
+void rotate_left_carry_cb(u8* operand)
+{
+    rotate_left_carry(operand);
+    set_ticks(8);
+}
+
 void halt(){
     assert(0);
 }
@@ -256,6 +324,27 @@ void stop(){
 void undefined(u8 opcode){
     printf("Undefined instruction 0x%02x", opcode);
     assert(0);
+}
+
+void load_r8(u8* lhs, u8* rhs){
+    *lhs = *rhs;
+    set_ticks(4);
+}
+
+void load_into_r8_from_addr(u8* lhs, u16* addr){
+    *lhs = mem_read_u8(*addr);
+    set_ticks(8);
+}
+
+void load_into_addr_from_r8(u16* addr, u8* value){
+    mem_write_u8(*addr, *value);
+    set_ticks(8);
+}
+
+void load_r16_value(u16* lhs){
+    *lhs = mem_read_u16(registers.SP);
+    registers.PC += 2;
+    set_ticks(12);
 }
 
 void do_cb_instruction(){
@@ -297,7 +386,7 @@ void do_instruction(u8 instruction){
         case 0x1e: break; // LD E, d8
         case 0x1f: rotate_right(&registers.A); break; // RRA
         case 0x20: break; // JR NZ, r8
-        case 0x21: break; // LD HL, d16
+        case 0x21: load_r16_value(&registers.HL); OPLOG(0x21, "LD HL, D16"); break; // LD HL, d16
         case 0x22: break; // LD (HL+), A
         case 0x23: increment_r16(&registers.HL); break; // INC HL
         case 0x24: increment_r8(&registers.H); break; // INC H
@@ -313,8 +402,8 @@ void do_instruction(u8 instruction){
         case 0x2e: break; // LD L, d8
         case 0x2f: break; // CPL
         case 0x30: break; // JR NC, r8
-        case 0x31: break; // LD SP, d16
-        case 0x32: break; // LD (HL-), A
+        case 0x31: load_r16_value(&registers.SP); OPLOG(0x31, "LD SP, d16"); break; // LD SP, d16
+        case 0x32: load_into_addr_from_r8(&registers.HL, &registers.A); registers.HL--; OPLOG(0x32, "LD (HL-), A"); break; // LD (HL-), A
         case 0x33: increment_r16(&registers.SP); break; // INC SP
         case 0x34: break; // INC (HL)
         case 0x35: break; // DEC (HL)
@@ -441,7 +530,7 @@ void do_instruction(u8 instruction){
         case 0xac: xor_a_r8(&registers.H); break; // XOR H
         case 0xad: xor_a_r8(&registers.L); break; // XOR L
         case 0xae: break; // XOR (HL)
-        case 0xaf: xor_a_r8(&registers.A); break; // XOR A
+        case 0xaf: OPLOG(0xaf, "XOR A"); xor_a_r8(&registers.A); break; // XOR A
         case 0xb0: or_a_r8(&registers.B); break; // OR B
         case 0xb1: or_a_r8(&registers.C); break; // OR C
         case 0xb2: or_a_r8(&registers.D); break; // OR D
@@ -529,9 +618,36 @@ void do_instruction(u8 instruction){
     }
 }
 
+
 int main(){
     // http://gbdev.gg8.se/wiki/articles/Gameboy_Bootstrap_ROM#Contents_of_the_ROM 
     // printf("%zu\n", sizeof(memory)); 
+
+    // setup memory with the boot rom
+    const char* filename = "data/DMG_ROM.bin";
+    u8_buffer* boot_rom = read_binary_file(filename);
+    print_u16_chunks(boot_rom);
+    assert(boot_rom->size == 256);
+   
+    memcpy(memory, boot_rom->data, boot_rom->size);
+    free_u8_buffer(boot_rom);
+    assert(memory[255] == 0x50);
+
+    // point to beginning of boot rom
+    registers.PC = 0;
+
+    /* test mem_read_u16
+    assert(memory[registers.PC++] == 0x31);
+    assert(mem_read_u16(registers.PC) == 0xfffe);
+    */
+
+    while(0)
+    {
+        // TODO interrupts
+        do_instruction(memory[registers.PC++]);
+        total_clock.m += tick_clock.m;
+        total_clock.t += tick_clock.t;
+    }
 
     // test rotate left carry
     registers.A = 0xf0; // 11110000
