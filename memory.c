@@ -2,7 +2,7 @@
 #include "memory.h"
 
 void mem_write_u8(u16 addr, u8 value){
-
+    memory[addr] = value;
 }
 
 u16 mem_read_u16(u16 addr){
