@@ -20,6 +20,7 @@ void mem_write_u8(u16 addr, u8 value);
 #define ADDR_TIMER_MODULO       (0xff06)
 #define ADDR_TIMER_CONTROL      (0xff07)
 #define ADDR_INTERRUPT_FLAGS    (0xff0f)
+
 // SOUND GOES IN HERE
 #define ADDR_LCD_CONTROL        (0xff40)
 #define ADDR_LCD_STATUS         (0xff41)

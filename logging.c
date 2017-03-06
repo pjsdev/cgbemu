@@ -18,5 +18,5 @@ void log_with_file_line(const char* file_name, const int line_number, const char
 }
 
 void OPLOG(unsigned short opcode, const char* memonic){
-    printf("(0x%04x)\t0x%02x [%s]\n", registers.PC, opcode, memonic);
+    printf("0x%02x [%s]\n", opcode, memonic);
 }
