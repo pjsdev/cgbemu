@@ -36,8 +36,6 @@ void cpu_run_tests(){
     assert(registers.HL == 0x0002);
 }
 
-
-
 void set_ticks(int t){
     tick_clock.t = t;
     tick_clock.m = t/4;
@@ -269,7 +267,7 @@ void stop(){
 }
 
 void undefined(u8 opcode){
-    printf("Undefined instruction 0x%02x\n", opcode);
+    OPLOG(opcode, "Undefined instruction");
 }
 
 void load_r8(u8* lhs, u8* rhs){
@@ -335,7 +333,7 @@ void do_cb_instruction(){
     switch(opcode){
         case 0x7c: bit_compare_r8(7, &registers.H); OPLOG(0x7c, "BIT 7, H"); break;
         default:
-            printf("Opcode not implemented 0x%02x\n", opcode);
+            OPLOG(opcode, "Opcode not implemented CB");
     }
 }
 

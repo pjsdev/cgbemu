@@ -1,6 +1,8 @@
 #ifndef CPU_H
 #define CPU_H
 
+#include "common.h"
+
 typedef struct {
     union {
         struct {u8 A; u8 F;};

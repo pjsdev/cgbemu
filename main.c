@@ -27,12 +27,11 @@ int main(){
 
     // point to beginning of boot rom
     registers.PC = 0;
-
+    
     /* test mem_read_u16
     assert(memory[registers.PC++] == 0x31);
     assert(mem_read_u16(registers.PC) == 0xfffe);
     */
-
 
     /* test load_into_addr_from_r8 && hl--   (0x32)
     registers.HL = 0x00ff; // addr
@@ -45,10 +44,9 @@ int main(){
 
     while(1)
     {
-        // TODO interrupts
         cpu_do_instruction(memory[registers.PC++]);
-        // total_clock.m += tick_clock.m;
-        // total_clock.t += tick_clock.t;
+        total_clock.m += tick_clock.m;
+        total_clock.t += tick_clock.t;
 
         if (registers.PC > 255) break;
     }
