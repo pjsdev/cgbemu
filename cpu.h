@@ -4,20 +4,22 @@
 #include "common.h"
 
 typedef struct {
+    // note: the anonymous structs are reversed for little endianness...
+    // maybe I should handle both?
     union {
-        struct {u8 A; u8 F;};
+        struct {u8 F; u8 A;};
         u16 AF;
     };
     union {
-        struct {u8 B; u8 C;};
+        struct {u8 C; u8 B;};
         u16 BC;
     };
     union {
-        struct {u8 D; u8 E;};
+        struct {u8 E; u8 D;};
         u16 DE;
     };
     union {
-        struct {u8 H; u8 L;};
+        struct {u8 L; u8 H;};
         u16 HL;
     };
 

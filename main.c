@@ -16,6 +16,9 @@ int main(){
     // http://gbdev.gg8.se/wiki/articles/Gameboy_Bootstrap_ROM#Contents_of_the_ROM 
     // printf("%zu\n", sizeof(memory)); 
 
+    // TODO it seems like the BIOS is not mapped into memory but instead a dedicated zone
+    // it looks like we map the cartridge ROM immediately then run bios...?
+    
     // setup memory with the boot rom
     const char* filename = "data/DMG_ROM.bin";
     u8_buffer* boot_rom = read_binary_file(filename);
@@ -28,33 +31,10 @@ int main(){
     // point to beginning of boot rom
     cpu_registers.PC = 0;
     
-    /* test mem_read_u16
-    assert(memory[cpu_registers.PC++] == 0x31);
-    assert(mem_read_u16(cpu_registers.PC) == 0xfffe);
-    */
-
-    /* test load_into_addr_from_r8 && hl--   (0x32)
-    cpu_registers.HL = 0x00ff; // addr
-    cpu_registers.A = 0x45;
-    cpu_do_instruction(0x32);
-
-    assert(memory[0x00ff] == 0x45);
-    assert(cpu_registers.HL == 0x00fe);
-    */
-
-
-    // TODO it seems like the BIOS is not mapped into memory but instead a dedicated zone
-    // it looks like we map the cartridge ROM immediately then run bios...?
-    
-
-    // TODO solve this. It seems like we load into the union member HL little endian?!
-    // L = ff and H = ee event thought we specify H then L in the union...
-    cpu_registers.HL = 0xffee;
-    printf("HL = 0x%04x; H = 0x%02x; L = 0x%02x;", cpu_registers.HL, cpu_registers.H, cpu_registers.L); 
-
-    running = false;
-
     while(running){
+
+        debug_tick();
+
         if (cpu_interrupt_master_enable){
             char interrupts = memory[ADDR_INTERRUPT_FLAGS] & memory[ADDR_INTERRUPT_ENABLE];
 
@@ -80,7 +60,6 @@ int main(){
             }
         }
 
-
         printf("(0x%04x)\t", cpu_registers.PC);
         u8 opcode = memory[cpu_registers.PC++];
         cpu_do_instruction(opcode);
@@ -88,7 +67,9 @@ int main(){
         cpu_total_clock.m += cpu_tick_clock.m;
         cpu_total_clock.t += cpu_tick_clock.t;
 
-        if (cpu_registers.PC > 12) break;
+        if (cpu_registers.PC == 33){
+            BREAK;
+        }
     }
 
     printf("\n");

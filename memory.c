@@ -4,7 +4,7 @@
 #include "memory.h"
 
 void mem_write_u8(u16 addr, u8 value){
-    printf("Writing u8 (0x%02x) to 0x%04x ", value, addr);
+    // printf("Writing u8 (0x%02x) to 0x%04x ", value, addr);
     memory[addr] = value;
 }
 

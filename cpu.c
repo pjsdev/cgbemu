@@ -36,6 +36,22 @@ void cpu_run_tests(){
     cpu_registers.HL = 0x0001;
     cpu_do_instruction(0x29);
     assert(cpu_registers.HL == 0x0002);
+
+    /* test mem_read_u16
+    assert(memory[cpu_registers.PC++] == 0x31);
+    assert(mem_read_u16(cpu_registers.PC) == 0xfffe);
+    */
+
+    /* test load_into_addr_from_r8 && hl--   (0x32)
+    cpu_registers.HL = 0x00ff; // addr
+    cpu_registers.A = 0x45;
+    cpu_do_instruction(0x32);
+
+    assert(memory[0x00ff] == 0x45);
+    assert(cpu_registers.HL == 0x00fe);
+    */
+
+   
 }
 
 void set_ticks(int t){
@@ -43,7 +59,7 @@ void set_ticks(int t){
     cpu_tick_clock.m = t/4;
 }
 
-void cpu_print_cpu_registers() {
+void cpu_print_registers() {
     printf(" --- Registers ---\n");
     printf(" A: 0x%02X ", cpu_registers.A);
     printf(" F: 0x%02X\n", cpu_registers.F);
@@ -53,8 +69,8 @@ void cpu_print_cpu_registers() {
     printf(" E: 0x%02X\n", cpu_registers.E);
     printf(" H: 0x%02X ", cpu_registers.H);
     printf(" L: 0x%02X\n", cpu_registers.L);
-    printf("SP: 0x%02X ", cpu_registers.SP);
-    printf("PC: 0x%02X\n", cpu_registers.PC);
+    printf("SP: 0x%04X\n", cpu_registers.SP);
+    printf("PC: 0x%04X\n", cpu_registers.PC);
     printf(" ----------------\n");
 }
 
@@ -295,7 +311,7 @@ void load_into_addr_from_r8(const u16* addr, u8* value){
 
 void load_r16_value(u16* lhs){
     *lhs = mem_read_u16(cpu_registers.PC);
-    printf("Loading 0x%04x ", *lhs);
+    // printf("Loading 0x%04x ", *lhs);
     cpu_registers.PC += 2;
     set_ticks(12);
 }
@@ -336,8 +352,6 @@ void do_cb_instruction(){
     switch(opcode){
         case 0x7c: { // BIT 7, H
             bit_compare_r8(7, &cpu_registers.H);
-            
-            printf("[0x%02x] [0x%02x] ", cpu_registers.F & FLAGS_ZERO, cpu_registers.H);
             OPLOG(0x7c, "BIT 7, H");
         } break;
         default:
@@ -350,7 +364,7 @@ void jump_nz(){
     // 0 means that we had a non-zero value
     if ((cpu_registers.F & FLAGS_ZERO) == 0){ 
         cpu_registers.PC += relative_addr; 
-    }
+    } 
 
     set_ticks(8);
 }
