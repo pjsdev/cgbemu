@@ -1,5 +1,5 @@
 scratch.py
-
+data/
 # Object files
 *.o
 *.ko
