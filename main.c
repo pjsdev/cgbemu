@@ -20,11 +20,9 @@ int main(){
     const char* filename = "data/DMG_ROM.bin";
     u8_buffer* boot_rom = read_binary_file(filename);
     printf("\n");
-    print_u16_chunks(boot_rom);
     assert(boot_rom->size == 256);
    
-    memcpy(memory, boot_rom->data, boot_rom->size);
-    free_u8_buffer(boot_rom);
+    memcpy(memory, boot_rom->data, boot_rom->size); 
     assert(memory[255] == 0x50);
 
     // point to beginning of boot rom
@@ -43,6 +41,18 @@ int main(){
     assert(memory[0x00ff] == 0x45);
     assert(cpu_registers.HL == 0x00fe);
     */
+
+
+    // TODO it seems like the BIOS is not mapped into memory but instead a dedicated zone
+    // it looks like we map the cartridge ROM immediately then run bios...?
+    
+
+    // TODO solve this. It seems like we load into the union member HL little endian?!
+    // L = ff and H = ee event thought we specify H then L in the union...
+    cpu_registers.HL = 0xffee;
+    printf("HL = 0x%04x; H = 0x%02x; L = 0x%02x;", cpu_registers.HL, cpu_registers.H, cpu_registers.L); 
+
+    running = false;
 
     while(running){
         if (cpu_interrupt_master_enable){
@@ -70,16 +80,20 @@ int main(){
             }
         }
 
+
         printf("(0x%04x)\t", cpu_registers.PC);
-        cpu_do_instruction(memory[cpu_registers.PC++]);
+        u8 opcode = memory[cpu_registers.PC++];
+        cpu_do_instruction(opcode);
         
         cpu_total_clock.m += cpu_tick_clock.m;
         cpu_total_clock.t += cpu_tick_clock.t;
 
-        if (cpu_registers.PC > 255) break;
+        if (cpu_registers.PC > 12) break;
     }
 
-    printf("done...");
+    printf("\n");
+    print_u16_chunks(boot_rom);
+    free_u8_buffer(boot_rom);
     return 0;
 }
 

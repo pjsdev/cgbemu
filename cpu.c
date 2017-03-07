@@ -288,13 +288,14 @@ void load_into_r8_from_addr(u8* lhs, u16* addr){
     set_ticks(8);
 }
 
-void load_into_addr_from_r8(u16* addr, u8* value){
+void load_into_addr_from_r8(const u16* addr, u8* value){
     mem_write_u8(*addr, *value);
     set_ticks(8);
 }
 
 void load_r16_value(u16* lhs){
-    *lhs = mem_read_u16(cpu_registers.SP);
+    *lhs = mem_read_u16(cpu_registers.PC);
+    printf("Loading 0x%04x ", *lhs);
     cpu_registers.PC += 2;
     set_ticks(12);
 }
@@ -311,11 +312,11 @@ void load_a_into_c_offset(){
 
 void bit_compare_r8(int bitpos, u8* operand){
     if(*operand & (1 << bitpos)){
-        //
+        // set to 0
         cpu_registers.F &= ~(FLAGS_ZERO);
     }
     else{
-        // zero flag
+        // zero flag. set to 1
         cpu_registers.F |= FLAGS_ZERO;
     }
 
@@ -335,6 +336,8 @@ void do_cb_instruction(){
     switch(opcode){
         case 0x7c: { // BIT 7, H
             bit_compare_r8(7, &cpu_registers.H);
+            
+            printf("[0x%02x] [0x%02x] ", cpu_registers.F & FLAGS_ZERO, cpu_registers.H);
             OPLOG(0x7c, "BIT 7, H");
         } break;
         default:
@@ -342,10 +345,11 @@ void do_cb_instruction(){
     }
 }
 
-void jump_nz(u8* relative_addr){
-    cpu_registers.PC += 1;
-    if (cpu_registers.F & FLAGS_ZERO){
-        cpu_registers.PC += (signed char)*relative_addr; 
+void jump_nz(){
+    signed char relative_addr = memory[cpu_registers.PC++];
+    // 0 means that we had a non-zero value
+    if ((cpu_registers.F & FLAGS_ZERO) == 0){ 
+        cpu_registers.PC += relative_addr; 
     }
 
     set_ticks(8);
@@ -480,6 +484,7 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0x1f, "RRA");
         } break;
         case 0x20: {  // JR NZ, r8
+            jump_nz();
             OPLOG(0x20, "JR NZ, r8");
         } break;
         case 0x21: {  // LD HL, d16

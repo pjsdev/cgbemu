@@ -13,11 +13,11 @@ typedef struct {
         u16 BC;
     };
     union {
-        struct {u8 D;u8 E;};
+        struct {u8 D; u8 E;};
         u16 DE;
     };
     union {
-        struct {u8 H;u8 L;};
+        struct {u8 H; u8 L;};
         u16 HL;
     };
 
