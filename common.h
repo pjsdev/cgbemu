@@ -9,6 +9,8 @@ typedef struct {
     u8* data;
 } u8_buffer;
 
+u8_buffer* cartridge;
+
 #endif
 
 

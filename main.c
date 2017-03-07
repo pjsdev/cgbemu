@@ -18,7 +18,13 @@ int main(){
 
     // TODO it seems like the BIOS is not mapped into memory but instead a dedicated zone
     // it looks like we map the cartridge ROM immediately then run bios...?
-    
+ 
+    // load cartridge into memory
+    const char* cartridge_path = "data/Tetris_World.gb";
+    cartridge = read_binary_file(cartridge_path);
+    assert(cartridge->size == 32768);
+    memcpy(memory, cartridge->data, cartridge->size); 
+    assert(memory[0x0101] == 0xc3);
     // setup memory with the boot rom
     const char* filename = "data/DMG_ROM.bin";
     u8_buffer* boot_rom = read_binary_file(filename);
@@ -27,6 +33,8 @@ int main(){
    
     memcpy(memory, boot_rom->data, boot_rom->size); 
     assert(memory[255] == 0x50);
+
+    return 0;
 
     // point to beginning of boot rom
     cpu_registers.PC = 0;
@@ -74,6 +82,7 @@ int main(){
 
     printf("\n");
     print_u16_chunks(boot_rom);
+    free_u8_buffer(cartridge);
     free_u8_buffer(boot_rom);
     return 0;
 }
