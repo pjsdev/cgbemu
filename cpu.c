@@ -333,6 +333,12 @@ void pop(u16* operand){
     set_ticks(12);
 }
 
+void ret(){
+    cpu_registers.PC = mem_read_u16(cpu_registers.SP);
+    cpu_registers.SP += 2;
+    set_ticks(16);
+}
+
 void push(u16* operand){
     cpu_registers.SP -= 2;
     mem_write_u16(cpu_registers.SP, *operand);
@@ -1089,7 +1095,7 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0xc0, "RET NZ");
         } break;
         case 0xc1: {  // POP BC 
-            pop(&registers.BC);
+            pop(&cpu_registers.BC);
             OPLOG(0xc1, "POP BC");
         } break;
         case 0xc2: {  // JP NZ, a16
@@ -1115,6 +1121,7 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0xc8, "RET Z");
         } break;
         case 0xc9: {  // RET
+            ret();
             OPLOG(0xc9, "RET");
         } break;
         case 0xca: {  // JP Z, a16
@@ -1140,7 +1147,7 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0xd0, "RET NC");
         } break;
         case 0xd1: {  // POP DE
-            pop(&registers.DE);
+            pop(&cpu_registers.DE);
             OPLOG(0xd1, "POP DE");
         } break;
         case 0xd2: {  // JP NC, a16
@@ -1191,7 +1198,7 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0xe0, "LDH (a8), A");
         } break;
         case 0xe1: {  // POP HL
-            pop(&registers.HL);
+            pop(&cpu_registers.HL);
             OPLOG(0xe1, "POP HL");
         } break;
         case 0xe2: {  // LD (C), A
@@ -1242,7 +1249,7 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0xf0, "LDH A,(a8)");
         } break;
         case 0xf1: {  // POP AF
-            pop(&registers.AF);
+            pop(&cpu_registers.AF);
             OPLOG(0xf1, "POP AF");
         } break;
         case 0xf2: {  // LD A, (C)
