@@ -62,9 +62,28 @@ void debug_print_mem(){
 }
 
 void debug_print_cartridge_header(){
+    // TODO the rest of the header (tetris has 00s)
+    // http://bgb.bircd.org/pandocs.htm#thecartridgeheader
+    // - psmith march 9 2017
     u8 title[16];
     memcpy(title, &memory[0x0134], 16);
+    
+    u8 cgb_flag = mem_read_u8(0x0143);
+
+    printf("Cartridge header...\n\n");
     printf("Title: %s\n", title);
+
+    switch(cgb_flag){
+        case 0x80:
+            printf("CGB supported, not mandatory\n");
+            break;
+        case 0xc0:
+            printf("CGB mandatory\n");
+            break;
+        default:
+            printf("Unknown CGB Flag 0x%02x\n", cgb_flag);
+            break;
+    }
 }
 
 int debug_tick_enabled = 0;
