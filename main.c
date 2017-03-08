@@ -81,6 +81,10 @@ int main(){
             BREAK;
         }
 
+        if (cpu_registers.PC == 255){
+            BREAK;
+        }
+
         debug_tick();
         system_tick();
     }

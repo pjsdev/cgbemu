@@ -94,8 +94,9 @@ void decrement_r8(u8* operand){
 
     if (*operand == 0x00)
     {
-        cpu_registers.F |= FLAGS_ZERO;
         cpu_registers.F |= FLAGS_CARRY;
+    } else if(*operand == 0x01){
+        cpu_registers.F |= FLAGS_ZERO;
     }
 
     (*operand)--;
