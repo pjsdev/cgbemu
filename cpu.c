@@ -92,8 +92,7 @@ void decrement_r16(u16* operand){
 void decrement_r8(u8* operand){
     cpu_registers.F = 0;
 
-    if (*operand == 0x00)
-    {
+    if (*operand == 0x00){
         cpu_registers.F |= FLAGS_CARRY;
     } else if(*operand == 0x01){
         cpu_registers.F |= FLAGS_ZERO;
@@ -288,6 +287,19 @@ void load_a_into_offset(){
 
 void load_a_into_c_offset(){
     mem_write_u8(0xff00 + cpu_registers.C, cpu_registers.A);
+    set_ticks(8);
+}
+
+void compare_value(){
+    cpu_registers.F = FLAGS_NEGATIVE;
+
+    if (cpu_registers.A == mem_read_u8(cpu_registers.PC++)){
+        cpu_registers.F |= FLAGS_ZERO;
+
+        // TODO explore the carry flag behaviour?
+        // pg 87 http://marc.rawer.de/Gameboy/Docs/GBCPUman.pdf
+    }
+    
     set_ticks(8);
 }
 
