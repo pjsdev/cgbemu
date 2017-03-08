@@ -320,6 +320,12 @@ void do_cb_instruction(){
     }
 }
 
+void push(u16* operand){
+    cpu_registers.SP -= 2;
+    mem_write_u16(cpu_registers.SP, *operand);
+    set_ticks(16);
+}
+
 void jump_nz(){
     signed char relative_addr = memory[cpu_registers.PC++];
     // 0 means that we had a non-zero value
@@ -1082,6 +1088,7 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0xc4, "CALL NZ, a16");
         } break;
         case 0xc5: {  // PUSH BC
+            push(&cpu_registers.BC);
             OPLOG(0xc5, "PUSH BC");
         } break;
         case 0xc6: {  // ADD A, d8
@@ -1131,6 +1138,7 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0xd4, "CALL NC, a16");
         } break;
         case 0xd5: {  // PUSH DE
+            push(&cpu_registers.DE);
             OPLOG(0xd5, "PUSH DE");
         } break;
         case 0xd6: {  // SUB d8
@@ -1181,6 +1189,7 @@ void cpu_do_instruction(u8 instruction){
             undefined(0xe4);
         } break;
         case 0xe5: {  // PUSH HL
+            push(&cpu_registers.HL);
             OPLOG(0xe5, "PUSH HL");
         } break;
         case 0xe6: {  // AND d8
@@ -1229,6 +1238,7 @@ void cpu_do_instruction(u8 instruction){
             undefined(0xf4);
         } break;
         case 0xf5: {  // PUSH AF
+            push(&cpu_registers.AF);
             OPLOG(0xf5, "PUSH AF");
         } break;
         case 0xf6: {  // OR d8
