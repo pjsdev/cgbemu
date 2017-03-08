@@ -11,6 +11,8 @@ typedef struct {
 
 u8_buffer* cartridge;
 
+int running;
+
 #endif
 
 

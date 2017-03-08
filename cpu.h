@@ -37,7 +37,6 @@ Clock cpu_total_clock;
 Registers cpu_registers;
 
 void cpu_do_instruction(u8 opcode);
-void cpu_print_registers();
 void cpu_run_tests();
 
 char cpu_interrupt_master_enable;

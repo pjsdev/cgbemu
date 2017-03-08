@@ -3,6 +3,11 @@
 #include <math.h>
 #include "SDL.h"
 
+// video
+SDL_Window *window;                    // Declare a pointer
+SDL_Surface* screenSurface = NULL;
+
+// audio
 unsigned int sampleFrequency = 0;
 unsigned int audioBufferSize = 0;
 unsigned int outputAudioBufferSize = 0;
@@ -34,12 +39,18 @@ void example_mixaudio(void *unused, Uint8 *stream, int len) {
     }
 }
 
-int sound_init(){
-    if( SDL_Init(SDL_INIT_TIMER | SDL_INIT_AUDIO ) <0 ) {
-        printf("Unable to init SDL Audio: %s\n", SDL_GetError());
-        return 1;
-    }
+void sound_tick(){
+}
 
+void display_tick(){
+}
+
+void system_tick(){
+    display_tick();
+    sound_tick();
+}
+
+int sound_init(){
     // setup audio
     SDL_AudioSpec *desired, *obtained;
 
@@ -82,11 +93,69 @@ int sound_init(){
     return 1;
 }
 
-void sound_tick(){
+
+
+
+int display_init(){
+        // Create an application window with the following settings:
+    window = SDL_CreateWindow(
+        "cgbemu",                          // window title
+        SDL_WINDOWPOS_UNDEFINED,           // initial x position
+        SDL_WINDOWPOS_UNDEFINED,           // initial y position
+        160,                               // width, in pixels
+        144,                               // height, in pixels
+        SDL_WINDOW_SHOWN                   // flags - see below
+    );
+
+    // Check that the window was successfully created
+    if (window == NULL) {
+        // In the case that the window could not be made...
+        printf("Could not create window: %s\n", SDL_GetError());
+        return 0;
+    }
+
+    
+    //Get window surface
+    screenSurface = SDL_GetWindowSurface( window );
+
+    //Fill the surface white
+    SDL_FillRect( screenSurface, NULL, SDL_MapRGB( screenSurface->format, 0xFF, 0xFF, 0xFF ) );
+    
+    //Update the surface
+    SDL_UpdateWindowSurface( window );
+
+    printf("Window created...");
+    return 1;
 }
 
-void sound_shutdown(){
+
+int system_init(){
+    if( SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_AUDIO ) <0 ) {
+        printf("Unable to init SDL: %s\n", SDL_GetError());
+        return 0;
+    }
+
+    if(!display_init()){
+        printf("Unable to init SDL display: %s\n", SDL_GetError());
+        return 0;
+    }
+    
+    if(!sound_init()){
+        printf("Unable to init SDL display: %s\n", SDL_GetError());
+        return 0;
+    }
+
+    return 1;
+}
+
+void system_shutdown(){
+    // Close and destroy the window
+    SDL_DestroyWindow(window);
+
     SDL_CloseAudio();
-}
 
+    // Clean up
+    SDL_Quit();
+
+}
 

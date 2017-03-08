@@ -3,6 +3,11 @@
 #include "common.h"
 #include "memory.h"
 
+void mem_write_u16(u16 addr, u16 value){
+    memory[addr + 1] = (u8)value >> 8; 
+    memory[addr] = (u8)value & 0x00ff; 
+}
+
 void mem_write_u8(u16 addr, u8 value){
     // printf("Writing u8 (0x%02x) to 0x%04x ", value, addr);
     memory[addr] = value;

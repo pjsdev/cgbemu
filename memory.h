@@ -10,6 +10,7 @@ u8 memory[MEMORY_SIZE];
 u16 mem_read_u16(u16 addr);
 u8 mem_read_u8(u16 addr);
 void mem_write_u8(u16 addr, u8 value);
+void mem_write_u16(u16 addr, u16 value);
 
 #define ADDR_SPRITE_RAM         (0xfe00) // ends fe9f (159 bytes)
 #define ADDR_JOYPAD_INFO        (0xff00)

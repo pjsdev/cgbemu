@@ -59,21 +59,6 @@ void set_ticks(int t){
     cpu_tick_clock.m = t/4;
 }
 
-void cpu_print_registers() {
-    printf(" --- Registers ---\n");
-    printf(" A: 0x%02X ", cpu_registers.A);
-    printf(" F: 0x%02X\n", cpu_registers.F);
-    printf(" B: 0x%02X ", cpu_registers.B);
-    printf(" C: 0x%02X\n", cpu_registers.C);
-    printf(" D: 0x%02X ", cpu_registers.D);
-    printf(" E: 0x%02X\n", cpu_registers.E);
-    printf(" H: 0x%02X ", cpu_registers.H);
-    printf(" L: 0x%02X\n", cpu_registers.L);
-    printf("SP: 0x%04X\n", cpu_registers.SP);
-    printf("PC: 0x%04X\n", cpu_registers.PC);
-    printf(" ----------------\n");
-}
-
 void increment_r16(u16* operand){
     // no flags
     (*operand)++;
@@ -170,11 +155,30 @@ void and_a_r8(u8* rhs){
     set_ticks(4);
 }
 
+void call(){
+    // grab the addr we want to move to
+    u16 call_addr = mem_read_u16(cpu_registers.PC);
+
+    // consume the PC for the read
+    cpu_registers.PC += 2;
+
+    // move the stack pointer down
+    cpu_registers.SP -= 2;
+
+    // record our current address
+    mem_write_u16(cpu_registers.SP, cpu_registers.PC);
+
+    // set the new address
+    cpu_registers.PC = call_addr;
+
+    set_ticks(24);
+}
+
 void nop(){
     set_ticks(4);
 }
 
-void rotate_right(u8* operand){
+void rotate_right(u8* operand, int ticks){
     u8 old_carry = cpu_registers.F & FLAGS_CARRY;
     cpu_registers.F = 0; 
 
@@ -183,9 +187,10 @@ void rotate_right(u8* operand){
 
     (*operand) = (*operand) >> 1;
     (*operand) |= old_carry << 3;
+    set_ticks(ticks);
 }
 
-void rotate_left(u8* operand){
+void rotate_left(u8* operand, int ticks){
     u8 old_carry = cpu_registers.F & FLAGS_CARRY;
     cpu_registers.F = 0;
 
@@ -196,9 +201,10 @@ void rotate_left(u8* operand){
     // shift left and put the old carry into the first bit
     (*operand) = (*operand) << 1;
     (*operand) |= old_carry >> 4;
+    set_ticks(ticks);
 }
 
-void rotate_right_carry(u8* operand){
+void rotate_right_carry(u8* operand, int ticks){
     cpu_registers.F = 0;
    
     // store lowest bit
@@ -212,9 +218,10 @@ void rotate_right_carry(u8* operand){
 
     // assign carry flag
     cpu_registers.F |= (carry << 4);
+    set_ticks(ticks);
 }
 
-void rotate_left_carry(u8* operand){
+void rotate_left_carry(u8* operand, int ticks){
     cpu_registers.F = 0;
    
     // store highest bit
@@ -228,54 +235,8 @@ void rotate_left_carry(u8* operand){
 
     // assign carry flag
     cpu_registers.F |= (carry >> 3);
-}
 
-void rotate_right_a(u8* operand)
-{
-    rotate_right(operand);
-    set_ticks(4);
-}
-
-void rotate_left_a(u8* operand)
-{
-    rotate_left(operand);
-    set_ticks(4);
-}
-
-void rotate_right_carry_a(u8* operand)
-{
-    rotate_right_carry(operand);
-    set_ticks(4);
-}
-
-void rotate_left_carry_a(u8* operand)
-{
-    rotate_left_carry(operand);
-    set_ticks(4);
-}
-
-void rotate_right_cb(u8* operand)
-{
-    rotate_right(operand);
-    set_ticks(8);
-}
-
-void rotate_left_cb(u8* operand)
-{
-    rotate_left(operand);
-    set_ticks(8);
-}
-
-void rotate_right_carry_cb(u8* operand)
-{
-    rotate_right_carry(operand);
-    set_ticks(8);
-}
-
-void rotate_left_carry_cb(u8* operand)
-{
-    rotate_left_carry(operand);
-    set_ticks(8);
+    set_ticks(ticks);
 }
 
 void halt(){
@@ -400,7 +361,7 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0x06, "LD B, d8");
         } break;
         case 0x07: {  // RLCA
-            rotate_left_carry(&cpu_registers.A);
+            rotate_left_carry(&cpu_registers.A, 4);
             OPLOG(0x07, "RLCA");
         } break;
         case 0x08: {  // LD (a16), SP
@@ -431,7 +392,7 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0x0e, "LD C, d8");
         }  break;
         case 0x0f: {  // RRCA
-            rotate_right_carry(&cpu_registers.A);
+            rotate_right_carry(&cpu_registers.A, 4);
             OPLOG(0x0f, "RRCA");
         } break;
         case 0x10: {  // STOP 0
@@ -463,7 +424,7 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0x16, "LD D, d8");
         }  break;
         case 0x17: {  // RLA
-            rotate_left(&cpu_registers.A);
+            rotate_left(&cpu_registers.A, 4);
             OPLOG(0x17, "RLA");
         } break;
         case 0x18: {  // JR r8
@@ -494,7 +455,7 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0x1e, "LD E, d8");
         }  break;
         case 0x1f: {  // RRA
-            rotate_right(&cpu_registers.A);
+            rotate_right(&cpu_registers.A, 4);
             OPLOG(0x1f, "RRA");
         } break;
         case 0x20: {  // JR NZ, r8
@@ -1145,6 +1106,7 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0xcc, "CALL Z, a16");
         } break;
         case 0xcd: {  // CALL a16
+            call();
             OPLOG(0xcd, "CALL a16");
         } break;
         case 0xce: {  // ADC A, d8
@@ -1164,7 +1126,6 @@ void cpu_do_instruction(u8 instruction){
         } break;
         case 0xd3: {  // NO INSTRUCTION
             undefined(0xd3);
-            OPLOG(0xd3, "NO INSTRUCTION");
         } break;
         case 0xd4: {  // CALL NC, a16 
             OPLOG(0xd4, "CALL NC, a16");
@@ -1189,14 +1150,12 @@ void cpu_do_instruction(u8 instruction){
         } break;
         case 0xdb: {  // NO INSTRUCTION
             undefined(0xdb);
-            OPLOG(0xdb, "NO INSTRUCTION");
         } break;
         case 0xdc: {  // CALL C, a16
             OPLOG(0xdc, "CALL C, a16");
         } break;
         case 0xdd: {  // NO INSTRUCTION
             undefined(0xdd);
-            OPLOG(0xdd, "NO INSTRUCTION");
         } break;
         case 0xde: {  // SBC A, d8
             OPLOG(0xde, "SBC A, d8");
@@ -1217,11 +1176,9 @@ void cpu_do_instruction(u8 instruction){
         } break;
         case 0xe3: {  // NO INSTRUCTION
             undefined(0xe3);
-            OPLOG(0xe3, "NO INSTRUCTION");
         } break;
         case 0xe4: {  // NO INSTRUCTION 
             undefined(0xe4);
-            OPLOG(0xe4, "NO INSTRUCTION");
         } break;
         case 0xe5: {  // PUSH HL
             OPLOG(0xe5, "PUSH HL");
@@ -1243,15 +1200,12 @@ void cpu_do_instruction(u8 instruction){
         } break;
         case 0xeb: {  // NO INSTRUCTION
             undefined(0xeb);
-            OPLOG(0xeb, "NO INSTRUCTION");
         } break;
         case 0xec: {  // NO INSTRUCTION 
             undefined(0xec);
-            OPLOG(0xec, "NO INSTRUCTION");
         } break;
         case 0xed: {  // NO INSTRUCTION 
             undefined(0xed);
-            OPLOG(0xed, "NO INSTRUCTION");
         } break;
         case 0xee: {  // XOR d8
             OPLOG(0xee, "XOR d8");
@@ -1273,7 +1227,6 @@ void cpu_do_instruction(u8 instruction){
         } break;
         case 0xf4: {  // NO INSTRUCTION
             undefined(0xf4);
-            OPLOG(0xf4, "NO INSTRUCTION");
         } break;
         case 0xf5: {  // PUSH AF
             OPLOG(0xf5, "PUSH AF");
@@ -1298,11 +1251,9 @@ void cpu_do_instruction(u8 instruction){
         } break;
         case 0xfc: {  // NO INSTRUCTION
             undefined(0xfc);
-            OPLOG(0xfc, "NO INSTRUCTION");
         } break;
         case 0xfd: {  // NO INSTRUCTION
             undefined(0xfd);
-            OPLOG(0xfd, "NO INSTRUCTION");
         } break;
         case 0xfe: {  // CP d8
             OPLOG(0xfe, "CP d8");
