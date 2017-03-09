@@ -56,6 +56,7 @@ u8_buffer* read_binary_file(const char* filename){
         return NULL;
     }
 
+    fclose(src);
     return buf; 
 }
 
