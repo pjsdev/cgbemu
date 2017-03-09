@@ -16,3 +16,4 @@ To build on osx, add the following:
 
     ./run_tree/SDL2.framework/
     ./run_tree/data/
+

@@ -124,7 +124,7 @@ int display_init(){
     //Update the surface
     SDL_UpdateWindowSurface( window );
 
-    printf("Window created...");
+    printf("Window created...\n");
     return 1;
 }
 

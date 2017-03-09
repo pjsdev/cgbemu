@@ -24,6 +24,10 @@ int main(){
     // load cartridge into memory
     const char* cartridge_path = "data/Tetris_World.gb";
     cartridge = read_binary_file(cartridge_path);
+
+    if(cartridge == NULL)
+        return 1;
+
     assert(cartridge->size == 32768);
     memcpy(memory, cartridge->data, cartridge->size); 
     assert(memory[0x0101] == 0xc3);
@@ -33,7 +37,9 @@ int main(){
     // setup memory with the boot rom
     const char* filename = "data/DMG_ROM.bin";
     u8_buffer* boot_rom = read_binary_file(filename);
-    printf("\n");
+    if(boot_rom == NULL)
+        return 1;
+
     assert(boot_rom->size == 256);
    
     memcpy(memory, boot_rom->data, boot_rom->size); 
