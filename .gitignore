@@ -1,6 +1,6 @@
 scratch.py
-data/
-lib/
+run_tree/
+input/
 
 # Object files
 *.o

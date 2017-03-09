@@ -19,7 +19,7 @@ int main(){
 
     // TODO command line args for debug mode that will disable audio/graphics and
     // allow breakpoints whilst dumping instructions... - psmith march 9 2017
-    // if(!system_init()) return 1;
+    if(!system_init()) return 1;
 
     // load cartridge into memory
     const char* cartridge_path = "data/Tetris_World.gb";
@@ -94,6 +94,6 @@ int main(){
     free_u8_buffer(cartridge);
     free_u8_buffer(boot_rom);
 
-    // system_shutdown();
+    system_shutdown();
     return 0;
 }
