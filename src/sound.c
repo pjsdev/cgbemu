@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <math.h>
 
-
 #include "SDL.h"
+#include "memory.h"
+
 
 // audio
 unsigned int sampleFrequency = 0;
@@ -79,7 +80,7 @@ int sound_init(){
 
     // if the format is 16 bit, two bytes are written for every sample
     if (obtained->format==AUDIO_U16 || obtained->format==AUDIO_S16) {
-        outputAudioBufferSize = 2*audioBufferSize;
+        outputAudioBufferSize = 2 * audioBufferSize;
     } else {
         outputAudioBufferSize = audioBufferSize;
     }

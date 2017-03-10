@@ -13,7 +13,6 @@
 #include "cpu.h"
 #include "logging.h"
 
-
 int main(){
     // http://gbdev.gg8.se/wiki/articles/Gameboy_Bootstrap_ROM#Contents_of_the_ROM 
     // printf("%zu\n", sizeof(memory)); 
@@ -85,7 +84,7 @@ int main(){
         cpu_total_clock.m += cpu_tick_clock.m;
         cpu_total_clock.t += cpu_tick_clock.t;
 
-        if (cpu_registers.PC == 0x004a){
+        if (cpu_registers.PC == 0x0068){
             BREAK;
         }
 
@@ -94,6 +93,8 @@ int main(){
         }
 
         debug_tick();
+        display_tick(cpu_tick_clock.t);
+        sound_tick(cpu_tick_clock.t);
     }
 
     printf("\n");

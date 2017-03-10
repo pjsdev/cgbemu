@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <assert.h>
 
@@ -155,7 +156,7 @@ void and_a_r8(u8* rhs){
     cpu_registers.A &= *rhs;
 
     if(cpu_registers.A == 0x00) cpu_registers.F |= FLAGS_ZERO;
-    set_ticks(4);
+    set_ticks(8);
 }
 
 void call(){
@@ -280,6 +281,11 @@ void load_r16_value(u16* lhs){
     set_ticks(12);
 }
 
+void load_offset_into_a(){
+    cpu_registers.A = mem_read_u8(0xff00 + memory[cpu_registers.PC++]);
+    set_ticks(12);
+}
+
 void load_a_into_offset(){
     mem_write_u8(0xff00 + memory[cpu_registers.PC++], cpu_registers.A);
     set_ticks(12);
@@ -290,17 +296,18 @@ void load_a_into_c_offset(){
     set_ticks(8);
 }
 
-void compare_value(){
+void compare_a(const u8 value, int ticks){
     cpu_registers.F = FLAGS_NEGATIVE;
+    u8 res = cpu_registers.A - value;
 
-    if (cpu_registers.A == mem_read_u8(cpu_registers.PC++)){
+    if (res == 0){
         cpu_registers.F |= FLAGS_ZERO;
 
         // TODO explore the carry flag behaviour?
         // pg 87 http://marc.rawer.de/Gameboy/Docs/GBCPUman.pdf
     }
     
-    set_ticks(8);
+    set_ticks(ticks);
 }
 
 void bit_compare_r8(int bitpos, u8* operand){
@@ -358,7 +365,23 @@ void push(u16* operand){
     set_ticks(16);
 }
 
-void jump_nz(){
+void jump_to_addr(){
+    signed char relative_addr = memory[cpu_registers.PC++];
+    cpu_registers.PC += relative_addr; 
+    set_ticks(12);
+}
+
+void jump_if_zero(){
+    signed char relative_addr = memory[cpu_registers.PC++];
+    // 0 means that we had a non-zero value
+    if ((cpu_registers.F & FLAGS_ZERO) != 0){ 
+        cpu_registers.PC += relative_addr; 
+    } 
+
+    set_ticks(8);
+}
+
+void jump_if_nonzero(){
     signed char relative_addr = memory[cpu_registers.PC++];
     // 0 means that we had a non-zero value
     if ((cpu_registers.F & FLAGS_ZERO) == 0){ 
@@ -466,6 +489,7 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0x17, "RLA");
         } break;
         case 0x18: {  // JR r8
+            jump_to_addr();
             OPLOG(0x18, "JR r8");
         } break;
         case 0x19: {  // ADD HL, DE
@@ -497,7 +521,7 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0x1f, "RRA");
         } break;
         case 0x20: {  // JR NZ, r8
-            jump_nz();
+            jump_if_nonzero();
             OPLOG(0x20, "JR NZ, r8");
         } break;
         case 0x21: {  // LD HL, d16
@@ -529,6 +553,7 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0x27, "DAA");
         } break;
         case 0x28: {  // JR Z, r8
+            jump_if_zero();
             OPLOG(0x28, "JR Z, r8");
         } break;
         case 0x29: {  // ADD HL, HL
@@ -555,6 +580,10 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0x2e, "LD L, d8");
         }  break;
         case 0x2f: {  // CPL
+            cpu_registers.A = ~cpu_registers.A;
+            cpu_registers.F |= FLAGS_NEGATIVE;
+            cpu_registers.F |= FLAGS_HALFCARRY;
+            set_ticks(4);
             OPLOG(0x2f, "CPL");
         } break;
         case 0x30: {  // JR NC, r8
@@ -1081,27 +1110,35 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0xb7, "OR A");
         } break;
         case 0xb8: {  // CP B
+            compare_a(cpu_registers.B, 4);
             OPLOG(0xb8, "CP B");
         } break;
         case 0xb9: {  // CP C
+            compare_a(cpu_registers.C, 4);
             OPLOG(0xb9, "CP C");
         } break;
         case 0xba: {  // CP D
+            compare_a(cpu_registers.D, 4);
             OPLOG(0xba, "CP D");
         } break;
         case 0xbb: {  // CP E
+            compare_a(cpu_registers.E, 4);
             OPLOG(0xbb, "CP E");
         } break;
         case 0xbc: {  // CP H
+            compare_a(cpu_registers.H, 4);
             OPLOG(0xbc, "CP H");
         } break;
         case 0xbd: {  // CP L
+            compare_a(cpu_registers.L, 4);
             OPLOG(0xbd, "CP L");
         } break;
         case 0xbe: {  // CP (HL)
+            compare_a(mem_read_u8(cpu_registers.HL), 8);
             OPLOG(0xbe, "CP (HL)");
         } break;
         case 0xbf: {  // CP A
+            compare_a(cpu_registers.A, 4);
             OPLOG(0xbf, "CP A");
         } break;
         case 0xc0: {  // RET NZ
@@ -1259,6 +1296,7 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0xef, "RST 28H");
         } break;
         case 0xf0: {  // LDH A,(a8)  
+            load_offset_into_a();
             OPLOG(0xf0, "LDH A,(a8)");
         } break;
         case 0xf1: {  // POP AF
@@ -1303,6 +1341,7 @@ void cpu_do_instruction(u8 instruction){
             undefined(0xfd);
         } break;
         case 0xfe: {  // CP d8
+            compare_a(mem_read_u8(cpu_registers.PC++), 8);
             OPLOG(0xfe, "CP d8");
         } break;
         case 0xff: {  // RST 38H

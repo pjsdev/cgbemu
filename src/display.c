@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include "SDL.h"
 
+#include "memory.h"
+
 SDL_Window* window;                    // Declare a pointer
 SDL_Surface* screenSurface = NULL;
 
