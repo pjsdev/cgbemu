@@ -11,6 +11,8 @@
 #define LOG_BUFFER_MAX (256)
 char _log_u8_buffer[LOG_BUFFER_MAX];
 
+int debug_tick_enabled = 0;
+
 void log_with_file_line(const char* file_name, const int line_number, const char* msg, ...)
 {
    va_list args;
@@ -22,8 +24,14 @@ void log_with_file_line(const char* file_name, const int line_number, const char
    // TODO file logging
 }
 
+void PCLOG(){
+    if(debug_tick_enabled)
+        printf("(0x%02x)", cpu_registers.PC);
+}
+
 void OPLOG(unsigned short opcode, const char* memonic){
-    printf("0x%02x [%s]\n", opcode, memonic);
+    if(debug_tick_enabled)
+        printf("0x%02x [%s]\n", opcode, memonic);
 }
 
 void debug_print_registers() {
@@ -86,7 +94,6 @@ void debug_print_cartridge_header(){
     }
 }
 
-int debug_tick_enabled = 0;
 
 void debug_break(const char* file_name, const int line_number, const char* function_name){
    int cont = 1;

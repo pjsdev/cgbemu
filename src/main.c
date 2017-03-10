@@ -13,6 +13,7 @@
 #include "cpu.h"
 #include "logging.h"
 
+
 int main(){
     // http://gbdev.gg8.se/wiki/articles/Gameboy_Bootstrap_ROM#Contents_of_the_ROM 
     // printf("%zu\n", sizeof(memory)); 
@@ -77,18 +78,19 @@ int main(){
             }
         }
 
-        printf("(0x%04x)\t", cpu_registers.PC);
+        PCLOG();
         u8 opcode = memory[cpu_registers.PC++];
         cpu_do_instruction(opcode);
         
         cpu_total_clock.m += cpu_tick_clock.m;
         cpu_total_clock.t += cpu_tick_clock.t;
 
-        if (cpu_registers.PC == 0x0068){
+        if (cpu_registers.PC == 0x0072){
             BREAK;
         }
 
         if (cpu_registers.PC == 255){
+            LOG("YOU MADE IT");
             BREAK;
         }
 
