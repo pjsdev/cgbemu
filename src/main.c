@@ -4,6 +4,8 @@
 #include <assert.h>
 #include <string.h>
 
+#include "display.h"
+#include "sound.h"
 #include "system.h"
 #include "common.h"
 #include "file.h"
@@ -92,7 +94,6 @@ int main(){
         }
 
         debug_tick();
-        system_tick();
     }
 
     printf("\n");
