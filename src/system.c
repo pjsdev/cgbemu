@@ -3,7 +3,17 @@
 
 #include "SDL.h"
 #include "display.h"
+#include "common.h"
 #include "sound.h"
+
+SDL_Event event;
+
+void system_tick(){
+    SDL_PollEvent(&event);
+    if(event.type == SDL_QUIT || event.type == SDL_WINDOWEVENT_CLOSE){
+        running = 0;
+    }
+}
 
 int system_init(){
     if( SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_AUDIO ) <0 ) {

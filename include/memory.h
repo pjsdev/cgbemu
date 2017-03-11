@@ -14,6 +14,11 @@ void mem_write_u16(u16 addr, u16 value);
 void mem_set_flag(u16 addr, u8 mask);
 void mem_unset_flag(u16 addr, u8 mask);
 
+#define ADDR_TILE_DATA1  (0x8000)
+#define ADDR_TILE_DATA2  (0x8800)
+#define ADDR_BGMAP1 (0x9800)
+#define ADDR_BGMAP2 (0x9c00)
+
 #define ADDR_SPRITE_RAM         (0xfe00) // ends fe9f (159 bytes)
 #define ADDR_JOYPAD_INFO        (0xff00)
 #define ADDR_SERIAL_TRANSFER    (0xff01)
@@ -38,6 +43,7 @@ void mem_unset_flag(u16 addr, u8 mask);
 #define ADDR_WINDOW_Y           (0xff4a)
 #define ADDR_WINDOW_X           (0xff4b)
 #define ADDR_INTERRUPT_ENABLE   (0xffff)
+
 
 #define INTERRUPT_VBLANK_BIT    (0x01)
 #define INTERRUPT_LCDC_BIT      (0x02)

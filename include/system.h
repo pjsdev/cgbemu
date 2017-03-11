@@ -6,6 +6,7 @@
 
 int system_init();
 void system_shutdown();
+void system_tick();
 
 #endif
 
