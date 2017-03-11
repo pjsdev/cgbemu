@@ -22,3 +22,11 @@ u16 mem_read_u16(u16 addr){
 u8 mem_read_u8(u16 addr){
     return memory[addr];
 }
+
+void mem_set_flag(u16 addr, u8 mask){
+    memory[addr] |= mask;
+}
+
+void mem_unset_flag(u16 addr, u8 mask){
+    memory[addr] &= ~mask;
+}

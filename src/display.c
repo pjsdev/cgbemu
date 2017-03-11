@@ -39,6 +39,39 @@ void display_tick(int clocks){
     u8 vertical_clock = (internal_clock / CLOCKS_PER_LINE) + 1; // how many horizontal lines we've done +1
 
     mem_write_u8(ADDR_LCDY_COORD, vertical_clock);
+   
+    // TODO 
+    // psmith Match 10 2017
+    // set the lcd status register 0xFF41
+    // trigger interrupts if selected
+    // draw stuff, can probably draw the whole frame in the first 0-64 clocks...
+    // could fake line by line rendering?
+
+    if (vertical_clock >= 145){                  // vblank
+        if(prev_vertical_clock <= 144){
+            // we just entered vblank
+            mem_set_flag(ADDR_INTERRUPT_FLAGS, INTERRUPT_VBLANK_BIT);
+        }
+
+        return;
+    } 
+     
+    if (horizontal_clock < 21){                   // oam load
+        if(prev_horizontal_clock >= 155){
+            // TODO interrupt
+        }
+
+    } else if(horizontal_clock < 64){             // pixel transfer
+        if(prev_horizontal_clock < 21){
+            // TODO interrupt
+        }
+
+    } else {                                      // hblank
+        if(prev_horizontal_clock <= 64){
+            // TODO interrupt
+        }
+
+    }
 }
 
 void display_shutdown(){
