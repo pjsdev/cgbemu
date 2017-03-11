@@ -85,12 +85,7 @@ int main(){
         cpu_total_clock.m += cpu_tick_clock.m;
         cpu_total_clock.t += cpu_tick_clock.t;
 
-        if (cpu_registers.PC == 0x0072){
-            BREAK;
-        }
-
-        if (cpu_registers.PC == 255){
-            LOG("YOU MADE IT");
+        if (cpu_registers.PC == 0x00fc){
             BREAK;
         }
 

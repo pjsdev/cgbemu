@@ -26,12 +26,12 @@ void log_with_file_line(const char* file_name, const int line_number, const char
 
 void PCLOG(){
     if(debug_tick_enabled)
-        printf("(0x%02x)", cpu_registers.PC);
+        printf("(0x%02x)\t", cpu_registers.PC);
 }
 
 void OPLOG(unsigned short opcode, const char* memonic){
     if(debug_tick_enabled)
-        printf("0x%02x [%s]\n", opcode, memonic);
+        printf("0x%02x\t%s\n", opcode, memonic);
 }
 
 void debug_print_registers() {

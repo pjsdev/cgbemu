@@ -109,10 +109,17 @@ void add_r16(u16* lhs, u16* rhs)
     set_ticks(8);
 }
 
-void add_a_r8(u8* rhs){
+void add_a_r8(u8 rhs){
     cpu_registers.F = 0;
-    // TODO flags
-    cpu_registers.A += *rhs;
+
+    // TODO carry flags
+
+    cpu_registers.A += rhs;
+
+    if(cpu_registers.A == 0){
+        cpu_registers.F |= FLAGS_ZERO;
+    }
+
     set_ticks(4);
 } 
 
@@ -893,30 +900,31 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0x7f, "LD A, A");
         } break;
         case 0x80: {  // ADD A, B
-            add_a_r8(&cpu_registers.B);
+            add_a_r8(cpu_registers.B);
             OPLOG(0x80, "ADD A, B");
         } break;
         case 0x81: {  // ADD A, C
-            add_a_r8(&cpu_registers.C);
+            add_a_r8(cpu_registers.C);
             OPLOG(0x81, "ADD A, C");
         } break;
         case 0x82: {  // ADD A, D
-            add_a_r8(&cpu_registers.D);
+            add_a_r8(cpu_registers.D);
             OPLOG(0x82, "ADD A, D");
         } break;
         case 0x83: {  // ADD A, E
-            add_a_r8(&cpu_registers.E);
+            add_a_r8(cpu_registers.E);
             OPLOG(0x83, "ADD A, E");
         } break;
         case 0x84: {  // ADD A, H
-            add_a_r8(&cpu_registers.H);
+            add_a_r8(cpu_registers.H);
             OPLOG(0x84, "ADD A, H");
         } break;
         case 0x85: {  // ADD A, L
-            add_a_r8(&cpu_registers.L);
+            add_a_r8(cpu_registers.L);
             OPLOG(0x85, "ADD A, L");
         } break;
         case 0x86: {  // ADD A, (HL)
+            add_a_r8(mem_read_u8(cpu_registers.HL));
             OPLOG(0x86, "ADD A, (HL)");
         } break;
         case 0x87: {  // ADD A, A
