@@ -7,6 +7,7 @@
 #include "memory.h"
 #include "logging.h"
 #include "common.h"
+#include "display.h"
 
 #define LOG_BUFFER_MAX (256)
 char _log_u8_buffer[LOG_BUFFER_MAX];
@@ -102,6 +103,9 @@ void debug_break(const char* file_name, const int line_number, const char* funct
        char c = getchar();
        if (c == '\n') continue;
        switch(c){
+           case 'd':
+               debug_display();
+               break;
            case 'q':
                running = 0;
                cont = 0;

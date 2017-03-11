@@ -928,7 +928,7 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0x86, "ADD A, (HL)");
         } break;
         case 0x87: {  // ADD A, A
-            add_a_r8(&cpu_registers.A);
+            add_a_r8(cpu_registers.A);
             OPLOG(0x87, "ADD A, A");
         } break;
         case 0x88: {  // ADC A, B 

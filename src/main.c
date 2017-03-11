@@ -1,5 +1,5 @@
+#include <signal.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
@@ -30,26 +30,21 @@ int main(){
     if(cartridge == NULL)
         return 1;
 
-    assert(cartridge->size == 32768);
     memcpy(memory, cartridge->data, cartridge->size); 
-    assert(memory[0x0101] == 0xc3);
     
-    debug_print_cartridge_header();
-
     // setup memory with the boot rom
     const char* filename = "data/DMG_ROM.bin";
     u8_buffer* boot_rom = read_binary_file(filename);
     if(boot_rom == NULL)
         return 1;
 
-    assert(boot_rom->size == 256);
-   
     memcpy(memory, boot_rom->data, boot_rom->size); 
-    assert(memory[255] == 0x50);
 
     // point to beginning of boot rom
     cpu_registers.PC = 0;
     
+    debug_print_cartridge_header();
+
     running = 1;
     while(running){
 
@@ -85,13 +80,13 @@ int main(){
         cpu_total_clock.m += cpu_tick_clock.m;
         cpu_total_clock.t += cpu_tick_clock.t;
 
-        if (cpu_registers.PC == 0x00fc){
+        if (cpu_registers.PC == 0x00fe){
             BREAK;
         }
 
-        debug_tick();
         display_tick(cpu_tick_clock.t);
         sound_tick(cpu_tick_clock.t);
+        debug_tick();
     }
 
     printf("\n");
