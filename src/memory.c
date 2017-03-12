@@ -30,3 +30,11 @@ void mem_set_flag(u16 addr, u8 mask){
 void mem_unset_flag(u16 addr, u8 mask){
     memory[addr] &= ~mask;
 }
+
+void mem_dec_value(u16 addr){
+    memory[addr]--;
+}
+
+void mem_inc_value(u16 addr){
+    memory[addr]++;
+}

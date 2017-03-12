@@ -13,6 +13,9 @@ void mem_write_u8(u16 addr, u8 value);
 void mem_write_u16(u16 addr, u16 value);
 void mem_set_flag(u16 addr, u8 mask);
 void mem_unset_flag(u16 addr, u8 mask);
+void mem_dec_value(u16 addr);
+void mem_inc_value(u16 addr);
+
 
 #define ADDR_TILE_DATA1  (0x8000)
 #define ADDR_TILE_DATA2  (0x8800)

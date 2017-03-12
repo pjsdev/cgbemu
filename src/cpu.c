@@ -260,9 +260,9 @@ void undefined(u8 opcode){
     OPLOG(opcode, "Undefined instruction");
 }
 
-void load_r8(u8* lhs, u8* rhs){
+void load_r8(u8* lhs, u8* rhs, int ticks){
     *lhs = *rhs;
-    set_ticks(4);
+    set_ticks(ticks);
 }
 
 void load_r8_value(u8* lhs){
@@ -279,6 +279,13 @@ void load_into_r8_from_addr(u8* lhs, u16* addr){
 void load_into_addr_from_r8(const u16* addr, u8* value){
     mem_write_u8(*addr, *value);
     set_ticks(8);
+}
+
+void load_into_addr_from_r16(u16 value){
+    u16 addr = mem_read_u16(cpu_registers.PC);
+    cpu_registers.PC += 2;
+    mem_write_u16(addr, value);
+    set_ticks(20);
 }
 
 void load_r16_value(u16* lhs){
@@ -366,6 +373,18 @@ void ret(){
     set_ticks(16);
 }
 
+void ret_z(){
+    if ((cpu_registers.F & FLAGS_ZERO) != 0){
+        ret();
+    }
+}
+
+void ret_nz(){
+    if ((cpu_registers.F & FLAGS_ZERO) == 0){
+        ret();
+    }
+}
+
 void push(u16* operand){
     cpu_registers.SP -= 2;
     mem_write_u16(cpu_registers.SP, *operand);
@@ -376,6 +395,26 @@ void jump_to_addr(){
     signed char relative_addr = memory[cpu_registers.PC++];
     cpu_registers.PC += relative_addr; 
     set_ticks(12);
+}
+
+void jump_if_noncarry(){
+    signed char relative_addr = memory[cpu_registers.PC++];
+    // 0 means that we had a non-zero value
+    if ((cpu_registers.F & FLAGS_CARRY) == 0){ 
+        cpu_registers.PC += relative_addr; 
+    } 
+
+    set_ticks(8);
+}
+
+void jump_if_carry(){
+    signed char relative_addr = memory[cpu_registers.PC++];
+    // 0 means that we had a non-zero value
+    if ((cpu_registers.F & FLAGS_CARRY) != 0){ 
+        cpu_registers.PC += relative_addr; 
+    } 
+
+    set_ticks(8);
 }
 
 void jump_if_zero(){
@@ -433,6 +472,7 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0x07, "RLCA");
         } break;
         case 0x08: {  // LD (a16), SP
+            load_into_addr_from_r16(cpu_registers.SP);
             OPLOG(0x08, "LD (a16), SP");
         } break;
         case 0x09: {  // ADD HL, BC
@@ -568,6 +608,9 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0x29, "ADD HL, HL");
         } break;
         case 0x2a: {  // LD A, (HL+)
+            u8 val = mem_read_u8(cpu_registers.HL);
+            load_r8(&cpu_registers.A, &val, 8);
+            cpu_registers.HL++;
             OPLOG(0x2a, "LD A, (HL+)");
         } break;
         case 0x2b: {  // DEC HL
@@ -594,6 +637,7 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0x2f, "CPL");
         } break;
         case 0x30: {  // JR NC, r8
+            jump_if_noncarry();
             OPLOG(0x30, "JR NC, r8");
         } break;
         case 0x31: {  // LD SP, d16
@@ -610,9 +654,13 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0x33, "INC SP");
         } break;
         case 0x34: {  // INC (HL)
+            mem_inc_value(cpu_registers.HL);
+            set_ticks(12);
             OPLOG(0x34, "INC (HL)");
         } break;
         case 0x35: {  // DEC (HL)
+            mem_dec_value(cpu_registers.HL);
+            set_ticks(12);
             OPLOG(0x35, "DEC (HL)");
         } break;
         case 0x36: {  // LD (HL), d8
@@ -622,6 +670,7 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0x37, "SCF");
         } break;
         case 0x38: {  // JR C, r8
+            jump_if_carry();
             OPLOG(0x38, "JR C, r8");
         } break;
         case 0x39: {  // ADD HL, SP
@@ -629,6 +678,9 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0x39, "ADD HL, SP");
         } break;
         case 0x3a: {  // LD A, (HL-)
+            u8 val = mem_read_u8(cpu_registers.HL);
+            load_r8(&cpu_registers.A, &val, 8);
+            cpu_registers.HL--;
             OPLOG(0x3a, "LD A, (HL-)");
         } break;
         case 0x3b: {  // DEC SP
@@ -648,192 +700,206 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0x3e, "LD A, d8");
         }  break;
         case 0x3f: {  // CCF
+            cpu_registers.F ^= FLAGS_CARRY;
+            set_ticks(4);
             OPLOG(0x3f, "CCF");
         } break;
         case 0x40: {  // LD B, B
-            load_r8(&cpu_registers.B, &cpu_registers.B);
+            load_r8(&cpu_registers.B, &cpu_registers.B, 4);
             OPLOG(0x40, "LD B, B");
         } break;
         case 0x41: {  // LD B, C
-            load_r8(&cpu_registers.B, &cpu_registers.C);
+            load_r8(&cpu_registers.B, &cpu_registers.C, 4);
             OPLOG(0x41, "LD B, C");
         } break;
         case 0x42: {  // LD B, D
-            load_r8(&cpu_registers.B, &cpu_registers.D);
+            load_r8(&cpu_registers.B, &cpu_registers.D, 4);
             OPLOG(0x42, "LD B, D");
         } break;
         case 0x43: {  // LD B, E 
-            load_r8(&cpu_registers.B, &cpu_registers.E);
+            load_r8(&cpu_registers.B, &cpu_registers.E, 4);
             OPLOG(0x43, "LD B, E");
         } break;
         case 0x44: {  // LD B, H  
-            load_r8(&cpu_registers.B, &cpu_registers.H);
+            load_r8(&cpu_registers.B, &cpu_registers.H, 4);
             OPLOG(0x44, "LD B, H");
         } break;
         case 0x45: {  // LD B, L  
-            load_r8(&cpu_registers.B, &cpu_registers.L);
+            load_r8(&cpu_registers.B, &cpu_registers.L, 4);
             OPLOG(0x45, "LD B, L");
         } break;
         case 0x46: {  // LD B, (HL)  
+            u8 val = mem_read_u8(cpu_registers.HL);
+            load_r8(&cpu_registers.B, &val, 8);
             OPLOG(0x46, "LD B, (HL)");
         } break;
         case 0x47: {  // LD B, A 
-            load_r8(&cpu_registers.B, &cpu_registers.A);
+            load_r8(&cpu_registers.B, &cpu_registers.A, 4);
             OPLOG(0x47, "LD B, A");
         } break;
         case 0x48: {  // LD C, B
-            load_r8(&cpu_registers.C, &cpu_registers.B);
+            load_r8(&cpu_registers.C, &cpu_registers.B, 4);
             OPLOG(0x48, "LD C, B");
         } break;
         case 0x49: {  // LD C, C
-            load_r8(&cpu_registers.C, &cpu_registers.C);
+            load_r8(&cpu_registers.C, &cpu_registers.C, 4);
             OPLOG(0x49, "LD C, C");
         } break;
         case 0x4a: {  // LD C, D 
-            load_r8(&cpu_registers.C, &cpu_registers.D);
+            load_r8(&cpu_registers.C, &cpu_registers.D, 4);
             OPLOG(0x4a, "LD C, D");
         } break;
         case 0x4b: {  // LD C, E
-            load_r8(&cpu_registers.C, &cpu_registers.E);
+            load_r8(&cpu_registers.C, &cpu_registers.E, 4);
             OPLOG(0x4b, "LD C, E");
         } break;
         case 0x4c: {  // LD C, H
-            load_r8(&cpu_registers.C, &cpu_registers.H);
+            load_r8(&cpu_registers.C, &cpu_registers.H, 4);
             OPLOG(0x4c, "LD C, H");
         } break;
         case 0x4d: {  // LD C, L
-            load_r8(&cpu_registers.C, &cpu_registers.L);
+            load_r8(&cpu_registers.C, &cpu_registers.L, 4);
             OPLOG(0x4d, "LD C, L");
         } break;
         case 0x4e: {  // LD C, (HL)
+            u8 val = mem_read_u8(cpu_registers.HL);
+            load_r8(&cpu_registers.C, &val, 8);
             OPLOG(0x4e, "LD C, (HL)");
         } break;
         case 0x4f: {  // LD C, A
-            load_r8(&cpu_registers.C, &cpu_registers.A);
+            load_r8(&cpu_registers.C, &cpu_registers.A, 4);
             OPLOG(0x4f, "LD C, A");
         } break;
         case 0x50: {  // LD D, B
-            load_r8(&cpu_registers.D, &cpu_registers.B);
+            load_r8(&cpu_registers.D, &cpu_registers.B, 4);
             OPLOG(0x50, "LD D, B");
         } break;
         case 0x51: {  // LD D, C
-            load_r8(&cpu_registers.D, &cpu_registers.C);
+            load_r8(&cpu_registers.D, &cpu_registers.C, 4);
             OPLOG(0x51, "LD D, C");
         } break;
         case 0x52: {  // LD D, D
-            load_r8(&cpu_registers.D, &cpu_registers.D);
+            load_r8(&cpu_registers.D, &cpu_registers.D, 4);
             OPLOG(0x52, "LD D, D");
         } break;
         case 0x53: {  // LD D, E
-            load_r8(&cpu_registers.D, &cpu_registers.E);
+            load_r8(&cpu_registers.D, &cpu_registers.E, 4);
             OPLOG(0x53, "LD D, E");
         } break;
         case 0x54: {  // LD D, H
-            load_r8(&cpu_registers.D, &cpu_registers.H);
+            load_r8(&cpu_registers.D, &cpu_registers.H, 4);
             OPLOG(0x54, "LD D, H");
         } break;
         case 0x55: {  // LD D, L
-            load_r8(&cpu_registers.D, &cpu_registers.L);
+            load_r8(&cpu_registers.D, &cpu_registers.L, 4);
             OPLOG(0x55, "LD D, L");
         } break;
         case 0x56: {  // LD D, (HL)
+            u8 val = mem_read_u8(cpu_registers.HL);
+            load_r8(&cpu_registers.D, &val, 8);
             OPLOG(0x56, "LD D, (HL)");
         } break;
         case 0x57: {  // LD D, A
-            load_r8(&cpu_registers.D, &cpu_registers.A);
+            load_r8(&cpu_registers.D, &cpu_registers.A, 4);
             OPLOG(0x57, "LD D, A");
         } break;
         case 0x58: {  // LD E, B
-            load_r8(&cpu_registers.E, &cpu_registers.B);
+            load_r8(&cpu_registers.E, &cpu_registers.B, 4);
             OPLOG(0x58, "LD E, B");
         } break;
         case 0x59: {  // LD E, C
-            load_r8(&cpu_registers.E, &cpu_registers.C);
+            load_r8(&cpu_registers.E, &cpu_registers.C, 4);
             OPLOG(0x59, "LD E, C");
         } break;
         case 0x5a: {  // LD E, D
-            load_r8(&cpu_registers.E, &cpu_registers.D);
+            load_r8(&cpu_registers.E, &cpu_registers.D, 4);
             OPLOG(0x5a, "LD E, D");
         } break;
         case 0x5b: {  // LD E, E
-            load_r8(&cpu_registers.E, &cpu_registers.E);
+            load_r8(&cpu_registers.E, &cpu_registers.E, 4);
             OPLOG(0x5b, "LD E, E");
         } break;
         case 0x5c: {  // LD E, H
-            load_r8(&cpu_registers.E, &cpu_registers.H);
+            load_r8(&cpu_registers.E, &cpu_registers.H, 4);
             OPLOG(0x5c, "LD E, H");
         } break;
         case 0x5d: {  // LD E, L
-            load_r8(&cpu_registers.E, &cpu_registers.L);
+            load_r8(&cpu_registers.E, &cpu_registers.L, 4);
             OPLOG(0x5d, "LD E, L");
         } break;
         case 0x5e: {  // LD E, (HL)
+            u8 val = mem_read_u8(cpu_registers.HL);
+            load_r8(&cpu_registers.E, &val, 8);
             OPLOG(0x5e, "LD E, (HL)");
         } break;
         case 0x5f: {  // LD E, A
-            load_r8(&cpu_registers.E, &cpu_registers.A);
+            load_r8(&cpu_registers.E, &cpu_registers.A, 4);
             OPLOG(0x5f, "LD E, A");
         } break;
         case 0x60: {  // LD H, B 
-            load_r8(&cpu_registers.H, &cpu_registers.B);
+            load_r8(&cpu_registers.H, &cpu_registers.B, 4);
             OPLOG(0x60, "LD H, B");
         } break;
         case 0x61: {  // LD H, C
-            load_r8(&cpu_registers.H, &cpu_registers.C);
+            load_r8(&cpu_registers.H, &cpu_registers.C, 4);
             OPLOG(0x61, "LD H, C");
         } break;
         case 0x62: {  // LD H, D 
-            load_r8(&cpu_registers.H, &cpu_registers.D);
+            load_r8(&cpu_registers.H, &cpu_registers.D, 4);
             OPLOG(0x62, "LD H, D");
         } break;
         case 0x63: {  // LD H, E 
-            load_r8(&cpu_registers.H, &cpu_registers.E);
+            load_r8(&cpu_registers.H, &cpu_registers.E, 4);
             OPLOG(0x63, "LD H, E");
         } break;
         case 0x64: {  // LD H, H 
-            load_r8(&cpu_registers.H, &cpu_registers.H);
+            load_r8(&cpu_registers.H, &cpu_registers.H, 4);
             OPLOG(0x64, "LD H, H");
         } break;
         case 0x65: {  // LD H, L 
-            load_r8(&cpu_registers.H, &cpu_registers.L);
+            load_r8(&cpu_registers.H, &cpu_registers.L, 4);
             OPLOG(0x65, "LD H, L");
         } break;
         case 0x66: {  // LD H, (HL)                                   
+            u8 val = mem_read_u8(cpu_registers.HL);
+            load_r8(&cpu_registers.H, &val, 8);
             OPLOG(0x66, "LD H, (HL)");
         } break;
         case 0x67: {  // LD H, A 
-            load_r8(&cpu_registers.H, &cpu_registers.A);
+            load_r8(&cpu_registers.H, &cpu_registers.A, 4);
             OPLOG(0x67, "LD H, A");
         } break;
         case 0x68: {  // LD L, B 
-            load_r8(&cpu_registers.L, &cpu_registers.B);
+            load_r8(&cpu_registers.L, &cpu_registers.B, 4);
             OPLOG(0x68, "LD L, B");
         } break;
         case 0x69: {  // LD L, C 
-            load_r8(&cpu_registers.L, &cpu_registers.C);
+            load_r8(&cpu_registers.L, &cpu_registers.C, 4);
             OPLOG(0x69, "LD L, C");
         } break;
         case 0x6a: {  // LD L, D 
-            load_r8(&cpu_registers.L, &cpu_registers.D);
+            load_r8(&cpu_registers.L, &cpu_registers.D, 4);
             OPLOG(0x6a, "LD L, D");
         } break;
         case 0x6b: {  // LD L, E 
-            load_r8(&cpu_registers.L, &cpu_registers.E);
+            load_r8(&cpu_registers.L, &cpu_registers.E, 4);
             OPLOG(0x6b, "LD L, E");
         } break;
         case 0x6c: {  // LD L, H 
-            load_r8(&cpu_registers.L, &cpu_registers.H);
+            load_r8(&cpu_registers.L, &cpu_registers.H, 4);
             OPLOG(0x6c, "LD L, H");
         } break;
         case 0x6d: {  // LD L, L 
-            load_r8(&cpu_registers.L, &cpu_registers.L);
+            load_r8(&cpu_registers.L, &cpu_registers.L, 4);
             OPLOG(0x6d, "LD L, L");
         } break;
         case 0x6e: {  // LD L, (HL)                                   
+            u8 val = mem_read_u8(cpu_registers.HL);
+            load_r8(&cpu_registers.L, &val, 8);
             OPLOG(0x6e, "LD L, (HL)");
         } break;
         case 0x6f: {  // LD L, A 
-            load_r8(&cpu_registers.L, &cpu_registers.A);
+            load_r8(&cpu_registers.L, &cpu_registers.A, 4);
             OPLOG(0x6f, "LD L, A");
         } break;
         case 0x70: {  // LD (HL), B
@@ -869,34 +935,36 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0x77, "LD (HL), A");
         } break;
         case 0x78: {  // LD A, B  
-            load_r8(&cpu_registers.A, &cpu_registers.B);
+            load_r8(&cpu_registers.A, &cpu_registers.B, 4);
             OPLOG(0x78, "LD A, B");
         } break;
         case 0x79: {  // LD A, C  
-            load_r8(&cpu_registers.A, &cpu_registers.C);
+            load_r8(&cpu_registers.A, &cpu_registers.C, 4);
             OPLOG(0x79, "LD A, C");
         } break;
         case 0x7a: {  // LD A, D  
-            load_r8(&cpu_registers.A, &cpu_registers.D);
+            load_r8(&cpu_registers.A, &cpu_registers.D, 4);
             OPLOG(0x7a, "LD A, D");
         } break;
         case 0x7b: {  // LD A, E  
-            load_r8(&cpu_registers.A, &cpu_registers.E);
+            load_r8(&cpu_registers.A, &cpu_registers.E, 4);
             OPLOG(0x7b, "LD A, E");
         } break;
         case 0x7c: {  // LD A, H  
-            load_r8(&cpu_registers.A, &cpu_registers.H);
+            load_r8(&cpu_registers.A, &cpu_registers.H, 4);
             OPLOG(0x7c, "LD A, H");
         } break;
         case 0x7d: {  // LD A, L  
-            load_r8(&cpu_registers.A, &cpu_registers.L);
+            load_r8(&cpu_registers.A, &cpu_registers.L, 4);
             OPLOG(0x7d, "LD A, L");
         } break;
         case 0x7e: {  // LD A, (HL)  
+            u8 val = mem_read_u8(cpu_registers.HL);
+            load_r8(&cpu_registers.A, &val, 8);
             OPLOG(0x7e, "LD A, (HL)");
         } break;
         case 0x7f: {  // LD A, A  
-            load_r8(&cpu_registers.A, &cpu_registers.A);
+            load_r8(&cpu_registers.A, &cpu_registers.A, 4);
             OPLOG(0x7f, "LD A, A");
         } break;
         case 0x80: {  // ADD A, B
@@ -956,6 +1024,9 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0x8d, "ADC A, L");
         } break;
         case 0x8e: {  // ADC A, (HL)                      
+            u8 val = mem_read_u8(cpu_registers.HL);
+            adc_a_r8(&val);
+            set_ticks(8);
             OPLOG(0x8e, "ADC A, (HL)");
         } break;
         case 0x8f: {  // ADC A, A 
@@ -1018,6 +1089,9 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0x9d, "SBC A, L");
         } break;
         case 0x9e: {  // SBC A, (HL)
+            u8 val = mem_read_u8(cpu_registers.HL);
+            subc_a_r8(&val);
+            set_ticks(8);
             OPLOG(0x9e, "SBC A, (HL)");
         } break;
         case 0x9f: {  // SBC A, A
@@ -1049,6 +1123,9 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0xa5, "AND L");
         } break;
         case 0xa6: {  // AND (HL)
+            u8 val = mem_read_u8(cpu_registers.HL);
+            and_a_r8(&val);
+            set_ticks(8);
             OPLOG(0xa6, "AND (HL)");
         } break;
         case 0xa7: {  // AND A
@@ -1080,6 +1157,9 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0xad, "XOR L");
         } break;
         case 0xae: {  // XOR (HL)
+            u8 val = mem_read_u8(cpu_registers.HL);
+            xor_a_r8(&val);
+            set_ticks(8);
             OPLOG(0xae, "XOR (HL)");
         } break;
         case 0xaf: {  // XOR A
@@ -1111,6 +1191,9 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0xb5, "OR L");
         } break;
         case 0xb6: {  // OR (HL)
+            u8 val = mem_read_u8(cpu_registers.HL);
+            or_a_r8(&val);
+            set_ticks(8);
             OPLOG(0xb6, "OR (HL)");
         } break;
         case 0xb7: {  // OR A
@@ -1150,6 +1233,7 @@ void cpu_do_instruction(u8 instruction){
             OPLOG(0xbf, "CP A");
         } break;
         case 0xc0: {  // RET NZ
+            ret_nz();
             OPLOG(0xc0, "RET NZ");
         } break;
         case 0xc1: {  // POP BC 

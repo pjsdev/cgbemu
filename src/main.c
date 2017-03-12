@@ -80,7 +80,7 @@ int main(){
         cpu_total_clock.m += cpu_tick_clock.m;
         cpu_total_clock.t += cpu_tick_clock.t;
 
-        if (cpu_registers.PC == 0x0093){
+        if (cpu_registers.PC == 0x00fe){
             BREAK;
         }
 
