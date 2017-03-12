@@ -19,6 +19,7 @@ Carry (0x10):       Set if the last operation produced a result over 255 (for ad
 #define FLAGS_CARRY     (0x10) 
 
 // TODO audit on flag effects of every instruction
+// Move from switch to function pointers that each do their instruction
 // psmith march 9 2017
 
 char interrupt_master_enable = 0;

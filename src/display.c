@@ -37,8 +37,6 @@ u8 pick_bit(u8 data, int bit_in, int bit_out){
     return ((masked >> bit_in) << bit_out);
 }
 
-void render_frame();
-
 Pixel get_bg_pixel(u8 palette_index){
     // u8 bg_palette = mem_read_u8(ADDR_BG_PALLETTE);
     // TODO use the actual BG palette instead of our hardcoded shades
@@ -60,13 +58,10 @@ void debug_display(){
     printf("PrevH: %d, PrevV: %d\n", prev_horizontal_clock, prev_vertical_clock);
 }
 
-
-
 void render_frame(){
     // TODO handle scroll 
     // u16 start_x = mem_read_u16(ADDR_SCROLL_X); 
     // u16 start_y = mem_read_u16(ADDR_SCROLL_Y); 
-    LOG("Rendering frame...");
 
     u8 TILE_SIZE = 16;
     u8 TILE_WIDTH = 8;
@@ -82,22 +77,41 @@ void render_frame(){
     u16 y;
     u16 x;
 
+    // for each pixel line
     for(y = 0; y < FULL_SCREEN_HEIGHT; y++){
+        // where to look for this pixels tile, the tile map is 32 wide
+        // and each tile is 8 pixels e.g.
+        // (0 / 8) * 32 == 0 (first line)
+        // (8 / 8) * 32 == 1 (8th pixel down, start of 2nd tile down)
         tile_index_base = ADDR_BGMAP1 + (y / TILE_WIDTH) * 32;
+
+        // each line is 2 bytes long so each y we go down, we have to offset 2 more bytes e.g.
+        // (0 % 8) * 2 == 0 (first line data starts at 0)
+        // (4 % 8) * 2 == 8 (4th pixel line starts 8 bytes into tile)
         tile_data_base = ADDR_TILE_DATA1 + (y % TILE_WIDTH) * (TILE_SIZE / TILE_WIDTH);
+
+        // for each pixel 
         for(x = 0; x < FULL_SCREEN_WIDTH;  x++){
+
+            // the index of this pixel squashed down into the 8 wide tile
             bg_idx = tile_index_base + (x / TILE_WIDTH);
+
+            // the tile for this pixel
             tile_idx = mem_read_u8(bg_idx);
+
+            // each tile is 16 bytes long so look at our lines tiles plus some lines in
             tile_data_addr = tile_data_base + tile_idx * TILE_SIZE;
             
+            // read the two bytes
             msb = mem_read_u8(tile_data_addr);
             lsb = mem_read_u8(tile_data_addr + 1);
+
+            // the shift is the position within the 8 pixel tile (-1)
             shift = TILE_WIDTH - (x % TILE_WIDTH) - 1;
+
+            // pick the two bits and compile into our 2 bit palette id
             palette_idx = pick_bit(msb, shift, 1) | pick_bit(lsb, shift, 0);
             all_pixels[(y * FULL_SCREEN_WIDTH) + x] = get_bg_pixel(palette_idx);
-
-            //printf("[%d, %d]:0x%04x->0x%02x (%d) == {0x%02x}\n",
-            //       x, y, ADDR_BGMAP1, bg_idx, bg_idx, tile_idx);
         }
 
     }
