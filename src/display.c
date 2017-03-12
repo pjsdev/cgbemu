@@ -29,14 +29,18 @@ typedef unsigned int Pixel;
 Pixel window_pixels[WINDOW_PIXEL_COUNT];
 Pixel all_pixels[PIXEL_COUNT];
 
-void debug_display(){
-    printf("---- Display -----");
-    printf("Internal clock: %d\n", internal_clock);
-    printf("PrevH: %d, PrevV: %d\n", prev_horizontal_clock, prev_vertical_clock);
+u8 pick_bit(u8 data, int bit_in, int bit_out){
+    // mask off other bits
+    // shift the bit you wanted to the 0th position
+    // shift it back to the position you wanted
+    u16 masked = (data & (1 << bit_in));
+    return ((masked >> bit_in) << bit_out);
 }
 
+void render_frame();
+
 Pixel get_bg_pixel(u8 palette_index){
-    u8 bg_palette = mem_read_u8(ADDR_BG_PALLETTE);
+    // u8 bg_palette = mem_read_u8(ADDR_BG_PALLETTE);
     // TODO use the actual BG palette instead of our hardcoded shades
     // we want this function to just return full u8 pixel colors
     switch(palette_index){
@@ -50,13 +54,60 @@ Pixel get_bg_pixel(u8 palette_index){
     }
 }
 
-u16 pick_bit(u16 data, int bit_in, int bit_out){
-    // mask off other bits
-    // shift the bit you wanted to the 0th position
-    // shift it back to the position you wanted
-    u16 masked = (data & (1 << bit_in));
-    return ((masked >> bit_in) << bit_out);
+void debug_display(){
+    printf("---- Display -----");
+    printf("Internal clock: %d\n", internal_clock);
+    printf("PrevH: %d, PrevV: %d\n", prev_horizontal_clock, prev_vertical_clock);
 }
+
+
+
+void render_frame(){
+    // TODO handle scroll 
+    // u16 start_x = mem_read_u16(ADDR_SCROLL_X); 
+    // u16 start_y = mem_read_u16(ADDR_SCROLL_Y); 
+    LOG("Rendering frame...");
+
+    u8 TILE_SIZE = 16;
+    u8 TILE_WIDTH = 8;
+    u16 tile_index_base;
+    u16 tile_data_base = ADDR_TILE_DATA1;
+    u16 bg_idx;
+    u16 tile_data_addr;
+    u8 tile_idx;
+    u8 msb;
+    u8 lsb;
+    u8 shift;
+    u8 palette_idx;
+    u16 y;
+    u16 x;
+
+    for(y = 0; y < FULL_SCREEN_HEIGHT; y++){
+        tile_index_base = ADDR_BGMAP1 + (y / TILE_WIDTH) * 32;
+        tile_data_base = ADDR_TILE_DATA1 + (y % TILE_WIDTH) * (TILE_SIZE / TILE_WIDTH);
+        for(x = 0; x < FULL_SCREEN_WIDTH;  x++){
+            bg_idx = tile_index_base + (x / TILE_WIDTH);
+            tile_idx = mem_read_u8(bg_idx);
+            tile_data_addr = tile_data_base + tile_idx * TILE_SIZE;
+            
+            msb = mem_read_u8(tile_data_addr);
+            lsb = mem_read_u8(tile_data_addr + 1);
+            shift = TILE_WIDTH - (x % TILE_WIDTH) - 1;
+            palette_idx = pick_bit(msb, shift, 1) | pick_bit(lsb, shift, 0);
+            all_pixels[(y * FULL_SCREEN_WIDTH) + x] = get_bg_pixel(palette_idx);
+
+            //printf("[%d, %d]:0x%04x->0x%02x (%d) == {0x%02x}\n",
+            //       x, y, ADDR_BGMAP1, bg_idx, bg_idx, tile_idx);
+        }
+
+    }
+
+    SDL_UpdateTexture(texture, NULL, all_pixels, FULL_SCREEN_WIDTH * sizeof(Pixel));
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, texture, NULL, NULL);
+    SDL_RenderPresent(renderer);
+}
+
 
 void display_tick(int clocks){
 
@@ -104,70 +155,7 @@ void display_tick(int clocks){
     // fake rendering at the beginning of a frame we just render all
     // TODO fake horizontal lines...
     if (prev_vertical_clock > 144 && vertical_clock < 144){
-        // TODO handle scroll 
-        // u16 start_x = mem_read_u16(ADDR_SCROLL_X); 
-        // u16 start_y = mem_read_u16(ADDR_SCROLL_Y); 
-
-        Pixel pixel_no = 0;
-        for(u8 i = 0; i < 32; i++){
-            u8 base = i * 32;
-            for(u8 j = 0; j < 32; j++){
-                u8 idx = base + j;
-                // e.g. if we are looking for tile 6, look 96 bytes into tile data
-                u8 bg_tile_index = mem_read_u8(ADDR_BGMAP1 + idx) * 16; // 16 == the number of bytes in each tile
-                u16 tile_addr = ADDR_TILE_DATA1 + bg_tile_index;
-
-                // extract it into all_pixels
-                for(int t = 0; t < 8; t++){ // for all 8 lines
-                    u16 line = mem_read_u16(tile_addr + (t * 2));
-                    u8 p1_col = (u8)(pick_bit(line, 7, 0) | pick_bit(line, 15, 1));
-                    u8 p2_col = (u8)(pick_bit(line, 6, 0) | pick_bit(line, 14, 1));
-                    u8 p3_col = (u8)(pick_bit(line, 5, 0) | pick_bit(line, 13, 1));
-                    u8 p4_col = (u8)(pick_bit(line, 4, 0) | pick_bit(line, 12, 1));
-                    u8 p5_col = (u8)(pick_bit(line, 3, 0) | pick_bit(line, 11, 1));
-                    u8 p6_col = (u8)(pick_bit(line, 2, 0) | pick_bit(line, 10, 1));
-                    u8 p7_col = (u8)(pick_bit(line, 1, 0) | pick_bit(line, 9, 1));
-                    u8 p8_col = (u8)(pick_bit(line, 0, 0) | pick_bit(line, 8, 1));
-
-                    assert(p1_col == 0);
-                    assert(p2_col == 0);
-                    assert(p3_col == 0);
-                    assert(p4_col == 0);
-                    assert(p5_col == 0);
-                    assert(p6_col == 0);
-                    assert(p7_col == 0);
-                    assert(p8_col == 0);
-
-
-                    //LOG("1: 0x%02x, 2: 0x%02x, 3: 0x%02x, 4: 0x%02x, 5: 0x%02x, 6: 0x%02x, 7: 0x%02x, 8: 0x%02x\n", 
-                    //    p1_col, p2_col, p3_col, p4_col, p5_col, p6_col, p7_col, p8_col);
-
-                    // LOG("Setting 8 pixels from %d\n", pixel_no);
-                    all_pixels[pixel_no++] = get_bg_pixel(p1_col);
-                    all_pixels[pixel_no++] = get_bg_pixel(p2_col);
-                    all_pixels[pixel_no++] = get_bg_pixel(p3_col);
-                    all_pixels[pixel_no++] = get_bg_pixel(p4_col);
-                    all_pixels[pixel_no++] = get_bg_pixel(p5_col);
-                    all_pixels[pixel_no++] = get_bg_pixel(p6_col);
-                    all_pixels[pixel_no++] = get_bg_pixel(p7_col);
-                    all_pixels[pixel_no++] = get_bg_pixel(p8_col);
-                }
-            }
-        }
-
-        //for(int i = 0; i < FULL_SCREEN_WIDTH; i++){
-        //    int base = i * FULL_SCREEN_WIDTH;
-        //    for(int j = 0; j < FULL_SCREEN_HEIGHT; j++){
-        //        printf("%d: %d ", base + j, all_pixels[base + j]);
-        //    }
-        //    printf("\n");
-        //}
-
-        LOG("Updated %d pixels", pixel_no);
-        SDL_UpdateTexture(texture, NULL, all_pixels, FULL_SCREEN_WIDTH * sizeof(Pixel));
-        SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, texture, NULL, NULL);
-        SDL_RenderPresent(renderer);
+        render_frame();
     }
 
     if (vertical_clock >= 145){                   // vblank
