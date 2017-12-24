@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include "SDL.h"
 
@@ -52,17 +53,42 @@ Pixel get_bg_pixel(u8 palette_index){
     }
 }
 
-void debug_display(){
+void debug_display()
+{
     printf("---- Display -----");
     printf("Internal clock: %d\n", internal_clock);
     printf("PrevH: %d, PrevV: %d\n", prev_horizontal_clock, prev_vertical_clock);
 }
 
-void render_frame(){
-    // TODO handle scroll 
-    // u16 start_x = mem_read_u16(ADDR_SCROLL_X); 
-    // u16 start_y = mem_read_u16(ADDR_SCROLL_Y); 
+bool is_on_frame_border(u8 x, u8 y)
+{
+    u8 frame_min_x = mem_read_u16(ADDR_SCROLL_X); 
+    u8 frame_min_y = mem_read_u16(ADDR_SCROLL_Y); 
+    u8 frame_max_x = frame_min_x + WINDOW_WIDTH;
+    u8 frame_max_y = frame_min_y + WINDOW_HEIGHT;
 
+    // between x's and on one of the y's
+    if(x == frame_min_x || x == frame_max_x)
+    {
+        if(y <= frame_max_y && y >= frame_min_y)
+        {
+            return true;
+        }
+    }
+
+    if(y == frame_min_y || y == frame_max_y)
+    {
+        if(x <= frame_max_x && x >= frame_min_x)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void render_frame()
+{
     u8 TILE_SIZE = 16;
     u8 TILE_WIDTH = 8;
     u16 tile_index_base;
@@ -91,7 +117,13 @@ void render_frame(){
         tile_data_base = ADDR_TILE_DATA1 + (y % TILE_WIDTH) * (TILE_SIZE / TILE_WIDTH);
 
         // for each pixel 
-        for(x = 0; x < FULL_SCREEN_WIDTH;  x++){
+        for(x = 0; x < FULL_SCREEN_WIDTH;  x++)
+        {
+            if(is_on_frame_border(x, y))
+            {
+                all_pixels[(y * FULL_SCREEN_WIDTH) + x] = 0x00;
+                continue;
+            }
 
             // the index of this pixel squashed down into the 8 wide tile
             bg_idx = tile_index_base + (x / TILE_WIDTH);
@@ -113,7 +145,6 @@ void render_frame(){
             palette_idx = pick_bit(msb, shift, 1) | pick_bit(lsb, shift, 0);
             all_pixels[(y * FULL_SCREEN_WIDTH) + x] = get_bg_pixel(palette_idx);
         }
-
     }
 
     SDL_UpdateTexture(texture, NULL, all_pixels, FULL_SCREEN_WIDTH * sizeof(Pixel));
