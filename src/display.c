@@ -31,8 +31,11 @@ Pixel window_pixels[WINDOW_PIXEL_COUNT];
 Pixel all_pixels[PIXEL_COUNT];
 
 // 0 = show background
+#define BACKGROUND_DISPLAY_MODE 0
 // 1 = just main game screen
-int display_mode = 0;
+#define ACTUAL_SIZE_DISPLAY_MODE 1
+
+int display_mode = BACKGROUND_DISPLAY_MODE;
 
 u8 pick_bit(u8 data, int bit_in, int bit_out){
     // mask off other bits
@@ -66,7 +69,7 @@ void debug_display()
 
 bool is_on_frame_border(u8 x, u8 y)
 {
-    if(display_mode == 1)
+    if(display_mode == ACTUAL_SIZE_DISPLAY_MODE)
     {
         return false;
     }
@@ -103,10 +106,10 @@ void display_blit_frame()
 
     switch(display_mode)
     {
-        case 0:
+        case BACKGROUND_DISPLAY_MODE:
             SDL_RenderCopy(renderer, texture, NULL, NULL);
             break;
-        case 1:
+        case ACTUAL_SIZE_DISPLAY_MODE:
             {
                 SDL_Rect rect;
                 rect.x = frame_min_x;
@@ -190,8 +193,11 @@ void render_frame()
 
 void display_cycle_window_mode()
 {
-    display_mode++;
-    if(display_mode > 1) display_mode = 0;
+    if(display_mode == BACKGROUND_DISPLAY_MODE) {
+        display_mode = ACTUAL_SIZE_DISPLAY_MODE;
+    } else {
+        display_mode = BACKGROUND_DISPLAY_MODE;
+    }
 
     switch(display_mode)
     {

@@ -55,18 +55,22 @@ int main(){
                 LOG("Interrupt Vblank");
 
             }
+
             if (interrupts & INTERRUPT_LCDC_BIT){
                 LOG("Interrupt LCDC");
 
             }
+
             if (interrupts & INTERRUPT_TIMER_BIT){
                 LOG("Interrupt Timer");
             
             }
+
             if (interrupts & INTERRUPT_SERIAL_IO_BIT){
                 LOG("Interrupt SerialIO");
             
             }
+
             if (interrupts & INTERRUPT_JOYPAD_BIT){
                 LOG("Interrupt Joypad");
             
@@ -81,7 +85,7 @@ int main(){
         cpu_total_clock.t += cpu_tick_clock.t;
 
         if (cpu_registers.PC == 0x00fe){
-            BREAK;
+            /* BREAK; */
         }
 
         system_tick();
