@@ -19,8 +19,7 @@ void print_u16_chunks(u8_buffer* buf){
     printf("\n");
 }
 
-u8_buffer* malloc_u8_buffer(int size)
-{
+u8_buffer* malloc_u8_buffer(int size){
     u8_buffer* buf = malloc(sizeof(u8_buffer));
     buf->size = size;
     buf->data = malloc(size);

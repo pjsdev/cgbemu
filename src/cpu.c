@@ -73,8 +73,7 @@ void increment_r16(u16* operand){
 void increment_r8(u8* operand){
     cpu_registers.F = 0;
    
-    if (*operand == 0xff)
-    {
+    if (*operand == 0xff){
         // we are about to produce a 0
         // we are about to carry
         cpu_registers.F |= FLAGS_ZERO;
@@ -104,8 +103,7 @@ void decrement_r8(u8* operand){
     set_ticks(4);
 }
 
-void add_r16(u16* lhs, u16* rhs)
-{
+void add_r16(u16* lhs, u16* rhs){
     (*lhs) += (*rhs);
     set_ticks(8);
 }

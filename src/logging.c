@@ -14,8 +14,7 @@ char _log_u8_buffer[LOG_BUFFER_MAX];
 
 int debug_tick_enabled = 0;
 
-void log_with_file_line(const char* file_name, const int line_number, const char* msg, ...)
-{
+void log_with_file_line(const char* file_name, const int line_number, const char* msg, ...){
    va_list args;
    va_start(args, msg);
    vsnprintf(_log_u8_buffer, LOG_BUFFER_MAX, msg, args);

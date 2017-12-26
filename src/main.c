@@ -85,7 +85,7 @@ int main(){
         cpu_total_clock.t += cpu_tick_clock.t;
 
         if (cpu_registers.PC == 0x00fe){
-            /* BREAK; */
+            BREAK;
         }
 
         system_tick();

@@ -8,20 +8,15 @@
 
 SDL_Event event;
 
-void system_tick()
-{
-    while(SDL_PollEvent(&event))
-    {
-        if(event.type == SDL_QUIT || event.type == SDL_WINDOWEVENT_CLOSE)
-        {
+void system_tick(){
+    while(SDL_PollEvent(&event)){
+        if(event.type == SDL_QUIT || event.type == SDL_WINDOWEVENT_CLOSE){
             running = 0;
             return;
         }
 
-        if(event.type == SDL_KEYDOWN)
-        {
-            if(event.key.keysym.sym == SDLK_F1)
-            {
+        if(event.type == SDL_KEYDOWN){
+            if(event.key.keysym.sym == SDLK_F1){
                 display_cycle_window_mode();
             }
         }

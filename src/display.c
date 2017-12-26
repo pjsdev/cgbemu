@@ -60,17 +60,14 @@ Pixel get_bg_pixel(u8 palette_index){
     }
 }
 
-void debug_display()
-{
+void debug_display(){
     printf("---- Display -----");
     printf("Internal clock: %d\n", internal_clock);
     printf("PrevH: %d, PrevV: %d\n", prev_horizontal_clock, prev_vertical_clock);
 }
 
-bool is_on_frame_border(u8 x, u8 y)
-{
-    if(display_mode == ACTUAL_SIZE_DISPLAY_MODE)
-    {
+bool is_on_frame_border(u8 x, u8 y){
+    if(display_mode == ACTUAL_SIZE_DISPLAY_MODE){
         return false;
     }
 
@@ -80,18 +77,14 @@ bool is_on_frame_border(u8 x, u8 y)
     u8 frame_max_y = frame_min_y + WINDOW_HEIGHT;
 
     // between x's and on one of the y's
-    if(x == frame_min_x || x == frame_max_x)
-    {
-        if(y <= frame_max_y && y >= frame_min_y)
-        {
+    if(x == frame_min_x || x == frame_max_x){
+        if(y <= frame_max_y && y >= frame_min_y){
             return true;
         }
     }
 
-    if(y == frame_min_y || y == frame_max_y)
-    {
-        if(x <= frame_max_x && x >= frame_min_x)
-        {
+    if(y == frame_min_y || y == frame_max_y){
+        if(x <= frame_max_x && x >= frame_min_x){
             return true;
         }
     }
@@ -99,8 +92,7 @@ bool is_on_frame_border(u8 x, u8 y)
     return false;
 }
 
-void display_blit_frame()
-{
+void display_blit_frame(){
     u8 frame_min_x = mem_read_u16(ADDR_SCROLL_X); 
     u8 frame_min_y = mem_read_u16(ADDR_SCROLL_Y); 
 
@@ -125,8 +117,7 @@ void display_blit_frame()
     }
 }
 
-void render_frame()
-{
+void render_frame(){
     u8 TILE_SIZE = 16;
     u8 TILE_WIDTH = 8;
     u16 tile_index_base;
@@ -191,8 +182,7 @@ void render_frame()
     SDL_RenderPresent(renderer);
 }
 
-void display_cycle_window_mode()
-{
+void display_cycle_window_mode(){
     if(display_mode == BACKGROUND_DISPLAY_MODE) {
         display_mode = ACTUAL_SIZE_DISPLAY_MODE;
     } else {
@@ -214,8 +204,9 @@ void display_cycle_window_mode()
 }
 
 void display_tick(int clocks) {
+
     // only clock up if we are being displayed
-    if ((mem_read_u8(ADDR_LCD_CONTROL) & 0x80) == 0){
+    if ((mem_read_u8(ADDR_LCD_CONTROL) & 0x80) == 0) {
         if (internal_clock > 0){                                                                            // turn off lcd
             LOG("Turning LCD Off");
             // we were showing before so turn off, resetting clocks
@@ -261,21 +252,21 @@ void display_tick(int clocks) {
         render_frame();
     }
 
-    if (vertical_clock >= 145){                   // vblank
-        if(prev_vertical_clock <= 144){
+    if (vertical_clock >= 145) {                   // vblank
+        if(prev_vertical_clock <= 144) {
             // we just entered vblank
             mem_set_flag(ADDR_INTERRUPT_FLAGS, INTERRUPT_VBLANK_BIT);
         }
-    } else if (horizontal_clock < 21){            // oam load
-        if(prev_horizontal_clock >= 155){
+    } else if (horizontal_clock < 21) {            // oam load
+        if(prev_horizontal_clock >= 155) {
             // TODO interrupt
         }
-    } else if(horizontal_clock < 64){             // pixel transfer
-        if(prev_horizontal_clock < 21){
+    } else if(horizontal_clock < 64) {             // pixel transfer
+        if(prev_horizontal_clock < 21) {
             // TODO interrupt
         }
     } else {                                      // hblank
-        if(prev_horizontal_clock <= 64){
+        if(prev_horizontal_clock <= 64) {
             // TODO interrupt
         }
     }
@@ -284,7 +275,7 @@ void display_tick(int clocks) {
     prev_vertical_clock = vertical_clock;
 }
 
-void display_shutdown(){
+void display_shutdown() {
     // Close and destroy the window
     SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer); 
@@ -322,7 +313,7 @@ int display_init(){
                                 SDL_TEXTUREACCESS_STREAMING,
                                 FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT);
 
-    if (texture == NULL){
+    if (texture == NULL) {
         printf("Could not create texture: %s\n", SDL_GetError());
         return 0;
     }
