@@ -30,6 +30,10 @@ typedef unsigned int Pixel;
 Pixel window_pixels[WINDOW_PIXEL_COUNT];
 Pixel all_pixels[PIXEL_COUNT];
 
+// 0 = show background
+// 1 = just main game screen
+int display_mode = 0;
+
 u8 pick_bit(u8 data, int bit_in, int bit_out){
     // mask off other bits
     // shift the bit you wanted to the 0th position
@@ -62,6 +66,11 @@ void debug_display()
 
 bool is_on_frame_border(u8 x, u8 y)
 {
+    if(display_mode == 1)
+    {
+        return false;
+    }
+
     u8 frame_min_x = mem_read_u16(ADDR_SCROLL_X); 
     u8 frame_min_y = mem_read_u16(ADDR_SCROLL_Y); 
     u8 frame_max_x = frame_min_x + WINDOW_WIDTH;
@@ -85,6 +94,32 @@ bool is_on_frame_border(u8 x, u8 y)
     }
 
     return false;
+}
+
+void display_blit_frame()
+{
+    u8 frame_min_x = mem_read_u16(ADDR_SCROLL_X); 
+    u8 frame_min_y = mem_read_u16(ADDR_SCROLL_Y); 
+
+    switch(display_mode)
+    {
+        case 0:
+            SDL_RenderCopy(renderer, texture, NULL, NULL);
+            break;
+        case 1:
+            {
+                SDL_Rect rect;
+                rect.x = frame_min_x;
+                rect.y = frame_min_y;
+                rect.w = WINDOW_WIDTH;
+                rect.h = WINDOW_HEIGHT;
+                SDL_RenderCopy(renderer, texture, &rect, NULL);
+            }
+            break;
+        default:
+            printf("Unknown display mode %d\n", display_mode);
+            break;
+    }
 }
 
 void render_frame()
@@ -149,13 +184,30 @@ void render_frame()
 
     SDL_UpdateTexture(texture, NULL, all_pixels, FULL_SCREEN_WIDTH * sizeof(Pixel));
     SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, texture, NULL, NULL);
+    display_blit_frame();
     SDL_RenderPresent(renderer);
 }
 
+void display_cycle_window_mode()
+{
+    display_mode++;
+    if(display_mode > 1) display_mode = 0;
 
-void display_tick(int clocks){
+    switch(display_mode)
+    {
+        case 0:
+            SDL_SetWindowSize(window, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT);
+            break;
+        case 1:
+            SDL_SetWindowSize(window, WINDOW_WIDTH, WINDOW_HEIGHT);
+            break;
+        default:
+            printf("Unknown window mode specified %d\n", display_mode);
+            break;
+    }
+}
 
+void display_tick(int clocks) {
     // only clock up if we are being displayed
     if ((mem_read_u8(ADDR_LCD_CONTROL) & 0x80) == 0){
         if (internal_clock > 0){                                                                            // turn off lcd
